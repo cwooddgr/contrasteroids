@@ -17,4 +17,4 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 
 ## Status
 
-2026-11-15: first full playable build (title, waves, three aliens, mines, sound). Sun angle still being tuned. Local only, no remote, not hosted.
+2026-11-15: first full playable build (title, waves, three aliens, mines, sound). Sun angle still being tuned. Private repo cwooddgr/contrasteroids; not hosted.
