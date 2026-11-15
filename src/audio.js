@@ -16,7 +16,13 @@ export class Sound {
     const ctx = (this.ctx = new AC());
     this.master = ctx.createGain();
     this.master.gain.value = this.muted ? 0 : 0.5;
-    this.master.connect(ctx.destination);
+    // A compressor keeps the sub-bass layers from clipping when explosions stack.
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.ratio.value = 4;
+    comp.attack.value = 0.005;
+    comp.release.value = 0.2;
+    this.master.connect(comp).connect(ctx.destination);
 
     const len = ctx.sampleRate;
     this.noise = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -25,6 +31,7 @@ export class Sound {
 
     // Continuous voices, gated by gain.
     this.thrustGain = this.loopNoise(380, 0);
+    this.thrustSub = this.loopNoise(110, 0); // low rumble for the subwoofer
     this.skiffVoice = this.loopTone('sawtooth', 140, 7, 18, 0);
     this.hunterVoice = this.loopTone('square', 520, 13, 60, 0);
   }
@@ -75,7 +82,10 @@ export class Sound {
     gainNode.gain.setTargetAtTime(level, this.ctx.currentTime, 0.03);
   }
 
-  thrust(on) { this.setLevel(this.thrustGain, on ? 0.35 : 0); }
+  thrust(on) {
+    this.setLevel(this.thrustGain, on ? 0.35 : 0);
+    this.setLevel(this.thrustSub, on ? 0.9 : 0);
+  }
   skiff(on) { this.setLevel(this.skiffVoice, on ? 0.06 : 0); }
   hunter(on) { this.setLevel(this.hunterVoice, on ? 0.025 : 0); }
 
@@ -121,8 +131,20 @@ export class Sound {
 
   shot() { this.tone('square', 1100, 180, 0.11, 0.08); }
   enemyShot() { this.tone('triangle', 700, 300, 0.18, 0.12); }
-  explode(size) { this.burst(400 + 2400 / size, 60, 0.25 + size * 0.22, 0.5); }
-  beat(high) { this.tone('triangle', high ? 62 : 52, high ? 58 : 48, 0.13, 0.45); }
+  // Sub-bass layers (roughly 30-60 Hz) carry the weight; a system with a
+  // subwoofer and bass management routes them to it.
+  sub(f0, f1, dur, level) { this.tone('sine', f0, f1, dur, level); }
+
+  explode(size) {
+    this.burst(400 + 2400 / size, 60, 0.25 + size * 0.22, 0.5);
+    this.sub(95 - size * 15, 28, 0.3 + size * 0.25, 0.45 + size * 0.15);
+  }
+
+  beat(high) {
+    const f = high ? 55 : 46;
+    this.sub(f, f * 0.92, 0.18, 0.9);
+    this.tone('triangle', f * 2, f * 1.85, 0.1, 0.18); // overtone so small speakers hear it
+  }
   mineBeep() { this.tone('sine', 1600, 1500, 0.06, 0.05); }
   hyperspace() { this.tone('sine', 180, 1400, 0.35, 0.12); }
   extraLife() {

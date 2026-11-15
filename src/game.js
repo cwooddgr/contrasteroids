@@ -121,7 +121,8 @@ export class Game {
       do {
         x = rand(-this.W / 2, this.W / 2);
         y = rand(-this.H / 2, this.H / 2);
-      } while (Math.hypot(x - this.player.x, y - this.player.y) < 32);
+      } while (Math.hypot(x - this.player.x, y - this.player.y) < 32
+        || this.rocks.some((r) => Math.hypot(r.x - x, r.y - y) < r.r + ROCK[3].r + 2));
       this.spawnRock(3, x, y);
     }
     this.waveMass = count * ROCK[3].mass;
@@ -149,6 +150,7 @@ export class Game {
       axis: randomAxis(),
       spin: rand(0.3, 1.3) * (4 - size) * 0.6,
       ownsGeometry: true,
+      born: this.time,
     };
     this.scene.add(mesh);
     this.rocks.push(rock);
@@ -190,6 +192,7 @@ export class Game {
     }
 
     this.updateRocks(dt);
+    this.collideRocks();
     this.updateBullets(this.bullets, dt);
     this.updateBullets(this.enemyBullets, dt);
     this.updateDebris(dt);
@@ -333,6 +336,47 @@ export class Game {
       TMP_Q.setFromAxisAngle(rock.axis, rock.spin * dt);
       rock.mesh.quaternion.premultiply(TMP_Q);
     }
+  }
+
+  // Rocks that run into each other: large and medium ones split, small ones
+  // bounce. New rocks get a short grace period so one split can't chain.
+  collideRocks() {
+    const GRACE = 1.2;
+    for (let i = 0; i < this.rocks.length; i++) {
+      const a = this.rocks[i];
+      for (let j = i + 1; j < this.rocks.length; j++) {
+        const b = this.rocks[j];
+        if (!this.hit(a, b)) continue;
+        if (this.time - a.born < GRACE || this.time - b.born < GRACE) continue;
+        const relA = { vx: a.vx - b.vx, vy: a.vy - b.vy };
+        const relB = { vx: b.vx - a.vx, vy: b.vy - a.vy };
+        if (a.size === 1 && b.size === 1) {
+          this.bounce(a, b);
+          continue;
+        }
+        // Each rock larger than small splits; a small rock that hits a bigger one bounces off it.
+        if (a.size > 1) this.breakRock(a, false, relB);
+        if (b.size > 1) this.breakRock(b, false, relA);
+        if (a.size === 1 && b.size > 1) a.born = this.time;
+        if (b.size === 1 && a.size > 1) b.born = this.time;
+        return; // the list changed; pick up any further contacts next step
+      }
+    }
+  }
+
+  bounce(a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const nx = dx / d, ny = dy / d;
+    const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+    if (rel > 0) { // approaching: swap the normal components (equal mass)
+      a.vx -= rel * nx; a.vy -= rel * ny;
+      b.vx += rel * nx; b.vy += rel * ny;
+      this.sound.tone('triangle', 160, 90, 0.08, 0.15);
+    }
+    const push = (a.r + b.r - d) / 2;
+    a.x -= nx * push; a.y -= ny * push;
+    b.x += nx * push; b.y += ny * push;
   }
 
   // ---------- aliens ----------

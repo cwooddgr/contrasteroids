@@ -143,8 +143,8 @@ export class Renderer {
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const size = Math.max(1, Math.round(this.renderer.getPixelRatio()));
-    this.stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size, sizeAttenuation: false }));
+    // One physical pixel per star, even on Retina screens.
+    this.stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: false }));
     this.scene.add(this.stars);
   }
 

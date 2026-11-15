@@ -13,7 +13,7 @@ Space has no atmosphere, so there is no fill light. Anything not lit directly by
 - Strict 1-bit output (U). Every pixel on screen is pure black or pure white, including the HUD and title text. No dithering, no grey.
 - One directional light coming from the upper-left of the screen, at 15° elevation above the play plane. Charlie first chose 45° (U), then said to lower it if that looked better (U). At 45° the rocks were nearly all white, so I chose 15° (proposed-by-agent, tune with the dev keys). No ambient light. Hard shadow maps, so objects self-shadow (crater floors, lumps) and shadow each other when they overlap.
 - Dark sides are not helped in any way (U). No outline, no rim light; the lit shape implies the rest.
-- Sparse white starfield behind everything (U). Rocks block stars naturally.
+- Sparse white starfield behind everything (U), one physical pixel per star (U). Rocks block stars naturally.
 - Orthographic camera looking straight down (U). The 3D shows only through lighting.
 - Self-lit things, which ignore the sun: bullets, the ship's thrust flame, sparks, blinking mine lights, and a brief explosion flash that lights nearby objects from the blast point.
 - Dev-only tuning (backtick toggles): J/L nudge the light's azimuth and I/K its elevation, shown on the HUD.
@@ -22,7 +22,7 @@ Implementation: render the lit scene to an MSAA render target, then a fullscreen
 
 ## Objects
 
-- **Rocks:** smooth, lumpy, and cratered (U), procedurally generated so no two match. Three sizes; large splits into two medium, medium into two small. Each tumbles on its own random axis.
+- **Rocks:** smooth, lumpy, and cratered (U), procedurally generated so no two match. Three sizes; large splits into two medium, medium into two small. Each tumbles on its own random axis. Rocks that collide split the same way (Charlie's request); two small rocks bounce off each other, and a fresh fragment ignores other rocks for about a second so one split can't chain into more.
 - **Ship:** a beveled arrowhead, classic inertial handling (U): rotate, thrust with drag, fire, hyperspace, screen wrap.
 - **Aliens** (original designs):
   - **Skiff:** a fast spindle that crosses the screen on a weaving path and fires aimed shots. From wave 1.
@@ -45,7 +45,7 @@ Implementation: render the lit scene to an MSAA render target, then a fullscreen
 
 ## Sound
 
-Synthesized with WebAudio, no files: a low two-note heartbeat that speeds up as rocks thin out, thrust noise, shots, explosions sized to the object, a warbling hum while a Skiff is present, a whine for the Hunter, mine beeps, hyperspace, and an extra-life chime.
+Synthesized with WebAudio, no files. Charlie asked for real subwoofer weight (U): explosions, the heartbeat, and thrust each carry a 30–60 Hz sine or noise layer, which bass management routes to a sub (a browser can't address the LFE channel directly), and a master compressor stops it clipping. The sounds: a low two-note heartbeat that speeds up as rocks thin out, thrust noise, shots, explosions sized to the object, a warbling hum while a Skiff is present, a whine for the Hunter, mine beeps, hyperspace, and an extra-life chime.
 
 ## Stack
 
