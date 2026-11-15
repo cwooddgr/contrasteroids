@@ -1,0 +1,232 @@
+// Procedural meshes. Everything is plain white; the sun does the rest.
+import * as THREE from 'three';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+
+export const WHITE_SMOOTH = new THREE.MeshLambertMaterial({ color: 0xffffff });
+export const WHITE_FLAT = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
+export const SELF_LIT = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+// --- small seeded RNG and 3D value noise ---
+export function rng(seed) {
+  let s = seed >>> 0 || 1;
+  return () => {
+    s ^= s << 13; s >>>= 0;
+    s ^= s >>> 17;
+    s ^= s << 5; s >>>= 0;
+    return s / 4294967296;
+  };
+}
+
+function hash3(i, j, k, seed) {
+  let h = (i * 374761393 + j * 668265263 + k * 2147483647 + seed * 144269504) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+
+function valueNoise(x, y, z, seed) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const xf = x - xi, yf = y - yi, zf = z - zi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), w = zf * zf * (3 - 2 * zf);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const c = (dx, dy, dz) => hash3(xi + dx, yi + dy, zi + dz, seed);
+  return lerp(
+    lerp(lerp(c(0, 0, 0), c(1, 0, 0), u), lerp(c(0, 1, 0), c(1, 1, 0), u), v),
+    lerp(lerp(c(0, 0, 1), c(1, 0, 1), u), lerp(c(0, 1, 1), c(1, 1, 1), u), v),
+    w,
+  );
+}
+
+function fbm(x, y, z, seed, octaves = 4) {
+  let sum = 0, amp = 0.5, freq = 1, norm = 0;
+  for (let o = 0; o < octaves; o++) {
+    sum += amp * valueNoise(x * freq, y * freq, z * freq, seed + o * 17);
+    norm += amp;
+    amp *= 0.5;
+    freq *= 2.1;
+  }
+  return sum / norm; // 0..1
+}
+
+// --- rocks: smooth, lumpy, cratered ---
+// detail: icosahedron subdivision level. Returns a unit-ish geometry.
+export function makeRockGeometry(seed, detail = 4) {
+  const rand = rng(seed * 9301 + 49297);
+  let g = new THREE.IcosahedronGeometry(1, detail);
+  g.deleteAttribute('normal');
+  g.deleteAttribute('uv');
+  g = mergeVertices(g);
+
+  const craters = [];
+  // Steep-walled craters: wall slope near the rim is about 2 * depth / rho,
+  // so these walls are steeper than 45° and throw real shadows at our sun angle.
+  const n = 6 + Math.floor(rand() * 8);
+  for (let i = 0; i < n; i++) {
+    const c = new THREE.Vector3(rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1).normalize();
+    const rho = 0.12 + rand() * 0.36;
+    craters.push({ c, rho, depth: rho * (0.35 + rand() * 0.3) });
+  }
+  const stretch = new THREE.Vector3(0.75 + rand() * 0.45, 0.75 + rand() * 0.45, 0.75 + rand() * 0.45);
+  const noiseScale = 1.2 + rand() * 0.8;
+  const lumpiness = 0.5 + rand() * 0.35;
+
+  const pos = g.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    let r = 1 + lumpiness * (fbm(v.x * noiseScale + 5, v.y * noiseScale + 5, v.z * noiseScale + 5, seed) - 0.5);
+    r += 0.1 * (fbm(v.x * 5, v.y * 5, v.z * 5, seed + 99, 3) - 0.5);
+    for (const { c, rho, depth } of craters) {
+      const a = Math.acos(THREE.MathUtils.clamp(v.dot(c), -1, 1));
+      const t = a / rho;
+      if (t < 1) r -= depth * (1 - t * t);
+      r += depth * 0.3 * Math.exp(-(((t - 1) / 0.15) ** 2));
+    }
+    v.multiplyScalar(r).multiply(stretch);
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  return g;
+}
+
+export function makeRockMesh(seed, radius, detail) {
+  const mesh = new THREE.Mesh(makeRockGeometry(seed, detail), WHITE_SMOOTH);
+  mesh.scale.setScalar(radius);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+// A shared set of small chunk geometries for explosion debris.
+export const DEBRIS_GEOMS = Array.from({ length: 10 }, (_, i) => makeRockGeometry(1000 + i, 1));
+
+function finish(obj) {
+  obj.traverse((o) => {
+    if (o.isMesh && o.material !== SELF_LIT) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    }
+  });
+  return obj;
+}
+
+// --- the player ship: a beveled arrowhead pointing along +x ---
+export function makeShip() {
+  const group = new THREE.Group();
+  const shape = new THREE.Shape();
+  shape.moveTo(2.3, 0);
+  shape.lineTo(-1.3, 1.45);
+  shape.lineTo(-0.7, 0);
+  shape.lineTo(-1.3, -1.45);
+  shape.closePath();
+  const body = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.35, bevelEnabled: true, bevelThickness: 0.35, bevelSize: 0.3, bevelSegments: 2,
+  });
+  body.translate(0, 0, -0.175);
+  group.add(new THREE.Mesh(body, WHITE_FLAT));
+
+  const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 8), WHITE_FLAT);
+  canopy.scale.set(1.6, 0.8, 0.9);
+  canopy.position.set(0.4, 0, 0.45);
+  group.add(canopy);
+
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.8, 8), SELF_LIT);
+  flame.rotation.z = Math.PI / 2; // tip points toward -x
+  flame.position.set(-1.7, 0, 0);
+  flame.visible = false;
+  group.add(flame);
+  group.userData.flame = flame;
+  return finish(group);
+}
+
+// --- Skiff: a spindle with fins, long axis along x ---
+export function makeSkiff() {
+  const group = new THREE.Group();
+  const spin = new THREE.Group();
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), WHITE_FLAT);
+  nose.rotation.z = -Math.PI / 2;
+  nose.position.x = 1.2;
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), WHITE_FLAT);
+  tail.rotation.z = Math.PI / 2;
+  tail.position.x = -1.2;
+  spin.add(nose, tail);
+  for (let i = 0; i < 3; i++) {
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.5), WHITE_FLAT);
+    const holder = new THREE.Group();
+    fin.position.set(-1.0, 0, 0.9);
+    holder.add(fin);
+    holder.rotation.x = (i / 3) * Math.PI * 2;
+    spin.add(holder);
+  }
+  group.add(spin);
+  group.userData.spin = spin;
+  return finish(group);
+}
+
+// --- Layer: a ring with a hub and spokes ---
+export function makeLayer() {
+  const group = new THREE.Group();
+  const spin = new THREE.Group();
+  spin.add(new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.55, 14, 40), WHITE_SMOOTH));
+  spin.add(new THREE.Mesh(new THREE.SphereGeometry(1.1, 20, 14), WHITE_SMOOTH));
+  for (let i = 0; i < 3; i++) {
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.5, 8), WHITE_SMOOTH);
+    spoke.position.y = 1.25;
+    const holder = new THREE.Group();
+    holder.add(spoke);
+    holder.rotation.z = (i / 3) * Math.PI * 2;
+    spin.add(holder);
+  }
+  spin.rotation.x = 0.9;
+  group.add(spin);
+  group.userData.spin = spin;
+  return finish(group);
+}
+
+// --- Hunter: a sharp stretched double pyramid pointing along +x ---
+export function makeHunter() {
+  const group = new THREE.Group();
+  const spin = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), WHITE_FLAT);
+  body.scale.set(2.4, 0.95, 0.95);
+  spin.add(body);
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.16, 6, 4), WHITE_FLAT);
+  collar.rotation.y = Math.PI / 2;
+  spin.add(collar);
+  group.add(spin);
+  group.userData.spin = spin;
+  return finish(group);
+}
+
+// --- Mine: a spiked ball with a self-lit blinker ---
+export function makeMine() {
+  const group = new THREE.Group();
+  const spin = new THREE.Group();
+  const core = new THREE.IcosahedronGeometry(0.7, 0);
+  spin.add(new THREE.Mesh(core, WHITE_FLAT));
+  const dirs = new THREE.IcosahedronGeometry(1, 0);
+  const p = dirs.attributes.position;
+  const seen = new Set();
+  const up = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i < p.count; i++) {
+    const d = new THREE.Vector3().fromBufferAttribute(p, i).normalize();
+    const key = d.toArray().map((n) => n.toFixed(2)).join();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.7, 5), WHITE_FLAT);
+    spike.quaternion.setFromUnitVectors(up, d);
+    spike.position.copy(d).multiplyScalar(0.85);
+    spin.add(spike);
+  }
+  group.add(spin);
+  const blink = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), SELF_LIT);
+  blink.position.z = 1.1;
+  group.add(blink);
+  group.userData.spin = spin;
+  group.userData.blink = blink;
+  return finish(group);
+}
+
+export const BULLET_GEOM = new THREE.SphereGeometry(0.32, 8, 6);
+export const ENEMY_BULLET_GEOM = new THREE.OctahedronGeometry(0.5, 0);
