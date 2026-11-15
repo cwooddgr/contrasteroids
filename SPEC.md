@@ -23,7 +23,7 @@ Implementation: render the lit scene to an MSAA render target, then a fullscreen
 ## Objects
 
 - **Rocks:** smooth, lumpy, and cratered (U), procedurally generated so no two match. Three sizes; large splits into two medium, medium into two small. Each tumbles on its own random axis. Rocks that collide split the same way (Charlie's request); two small rocks bounce off each other, and a fresh fragment ignores other rocks for about a second so one split can't chain into more.
-- **Ship:** a beveled arrowhead, classic inertial handling (U): rotate, thrust with drag, fire, hyperspace, screen wrap.
+- **Ship:** classic inertial handling (U): rotate, thrust with drag, fire, hyperspace, screen wrap. Charlie asked for the ship to show the contrast effect more (U), so I gave it a sharp center ridge with steep flanks: one flank is lit and the other black, and they swap as it turns. A fin and two engine pods cast shadows on the hull, and it banks hard (about 55°) into turns.
 - **Aliens** (original designs):
   - **Skiff:** a fast spindle that crosses the screen on a weaving path and fires aimed shots. From wave 1.
   - **Layer:** a slow ring with a hub that drops proximity mines. From wave 2.
@@ -45,7 +45,13 @@ Implementation: render the lit scene to an MSAA render target, then a fullscreen
 
 ## Sound
 
-Synthesized with WebAudio, no files. Charlie asked for real subwoofer weight (U): explosions, the heartbeat, and thrust each carry a 30–60 Hz sine or noise layer, which bass management routes to a sub (a browser can't address the LFE channel directly), and a master compressor stops it clipping. The sounds: a low two-note heartbeat that speeds up as rocks thin out, thrust noise, shots, explosions sized to the object, a warbling hum while a Skiff is present, a whine for the Hunter, mine beeps, hyperspace, and an extra-life chime.
+Synthesized with WebAudio, no files. Everything runs through a reverb send and a master compressor. Charlie asked for real subwoofer weight (U) and then for more drama (U):
+
+- Explosions layer a crack, a filtered body, a debris rattle, a 25–60 Hz sub boom, and a driven thud. Bass management routes the sub content to a subwoofer (a browser can't address the LFE channel directly).
+- Alien deaths add a metallic ring; the player's death adds a falling driven saw, a long rumble, and a sub tail.
+- Shots carry a low kick; hyperspace is a rising sweep with a whoosh; each wave opens with a slow low swell.
+- Background (Charlie asked for something haunting that speeds up as rocks thin, U): a low drone (a fifth plus filtered saws) whose filter opens and wobbles faster as the wave clears, a thin high whistle near the end of a wave, and a pulse that walks a four-note figure (E, E, G, F#) and speeds up from 1.0 s to 0.28 s.
+- Also thrust (noise plus a sub rumble), a Skiff hum, a Hunter whine, mine beeps, and an extra-life chime.
 
 ## Stack
 

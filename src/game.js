@@ -131,7 +131,8 @@ export class Game {
     this.bannerTimer = 2;
     this.alienTimer = rand(8, 14);
     this.beatTimer = 0.5;
-    this.beatHigh = false;
+    this.beatStep = 0;
+    this.sound.waveStart();
   }
 
   spawnRock(size, x, y, vx, vy) {
@@ -259,7 +260,7 @@ export class Game {
     if (inp.held('ArrowLeft', 'KeyA')) turn += 1;
     if (inp.held('ArrowRight', 'KeyD')) turn -= 1;
     p.angle += turn * TURN * dt;
-    p.bank += (turn * -0.55 - p.bank) * Math.min(1, dt * 8);
+    p.bank += (turn * -0.95 - p.bank) * Math.min(1, dt * 7);
 
     const thrusting = inp.held('ArrowUp', 'KeyW');
     if (thrusting) {
@@ -277,7 +278,7 @@ export class Game {
     this.wrap(p);
 
     flame.visible = thrusting && Math.random() > 0.15;
-    flame.scale.set(1, rand(0.7, 1.25), 1);
+    flame.scale.set(rand(0.7, 1.3), 1, 1);
     this.sound.thrust(thrusting);
 
     p.fireCooldown -= dt;
@@ -613,7 +614,8 @@ export class Game {
 
   killAlien(a, byPlayer) {
     if (byPlayer) this.addScore(SCORE[a.type]);
-    this.explode(a.x, a.y, 2, false);
+    this.explode(a.x, a.y, 2, false, true);
+    this.sound.alienDeath();
     this.removeEntity(this.aliens, a);
   }
 
@@ -624,7 +626,8 @@ export class Game {
     this.ship.visible = false;
     this.ship.userData.flame.visible = false;
     this.sound.thrust(false);
-    this.explode(p.x, p.y, 2.5, false);
+    this.explode(p.x, p.y, 2.5, false, true);
+    this.sound.playerDeath();
     this.lives -= 1;
     if (this.lives <= 0) this.gameOverTimer = 2.5;
   }
@@ -661,19 +664,20 @@ export class Game {
 
     // Heartbeat speeds up as the wave's rock mass is cleared.
     const mass = this.rocks.reduce((m, r) => m + ROCK[r.size].mass, 0);
-    const cleared = 1 - mass / this.waveMass;
+    const cleared = Math.max(0, 1 - mass / this.waveMass);
+    this.sound.drone(true);
+    this.sound.tension(cleared);
     this.beatTimer -= dt;
     if (this.beatTimer <= 0) {
-      this.beatTimer = THREE.MathUtils.lerp(1.0, 0.3, Math.max(0, cleared));
-      this.sound.beat(this.beatHigh);
-      this.beatHigh = !this.beatHigh;
+      this.beatTimer = THREE.MathUtils.lerp(1.0, 0.28, cleared);
+      this.sound.beat(this.beatStep++);
     }
   }
 
   // ---------- effects ----------
 
-  explode(x, y, size, isRock) {
-    this.sound.explode(size);
+  explode(x, y, size, isRock, silent = false) {
+    if (!silent) this.sound.explode(size);
     this.r.flash(x, y, 6 + size * 6, 0.18 + size * 0.06);
     this.burstSparks(x, y, Math.round(10 + size * 10), 20 + size * 8);
     const n = isRock ? 3 + size * 2 : 6;

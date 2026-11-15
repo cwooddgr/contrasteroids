@@ -1,6 +1,7 @@
 // Procedural meshes. Everything is plain white; the sun does the rest.
 import * as THREE from 'three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 
 export const WHITE_SMOOTH = new THREE.MeshLambertMaterial({ color: 0xffffff });
 export const WHITE_FLAT = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
@@ -111,29 +112,47 @@ function finish(obj) {
   return obj;
 }
 
-// --- the player ship: a beveled arrowhead pointing along +x ---
+// --- the player ship, pointing along +x ---
+// A sharp center ridge with steep flanks: at our low sun one flank is lit and
+// the other is black, and they swap as the ship turns. The fin and engine
+// pods cast shadows across the hull.
 export function makeShip() {
   const group = new THREE.Group();
-  const shape = new THREE.Shape();
-  shape.moveTo(2.3, 0);
-  shape.lineTo(-1.3, 1.45);
-  shape.lineTo(-0.7, 0);
-  shape.lineTo(-1.3, -1.45);
-  shape.closePath();
-  const body = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.35, bevelEnabled: true, bevelThickness: 0.35, bevelSize: 0.3, bevelSegments: 2,
-  });
-  body.translate(0, 0, -0.175);
-  group.add(new THREE.Mesh(body, WHITE_FLAT));
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const hull = new ConvexGeometry([
+    V(2.7, 0, 0.05), // nose
+    V(0.5, 0, 1.15), // ridge peak
+    V(-1.2, 0, 0.75), // ridge tail
+    V(-1.5, 1.75, -0.05), V(-1.5, -1.75, -0.05), // wing tips
+    V(-1.25, 0.6, 0.3), V(-1.25, -0.6, 0.3), // tail shoulders
+    V(0.9, 0.55, 0.05), V(0.9, -0.55, 0.05), // forward chines
+    V(0.2, 0, -0.45), V(-1.2, 0, -0.35), // keel
+  ]);
+  group.add(new THREE.Mesh(hull, WHITE_FLAT));
 
-  const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 8), WHITE_FLAT);
-  canopy.scale.set(1.6, 0.8, 0.9);
-  canopy.position.set(0.4, 0, 0.45);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.8), WHITE_FLAT);
+  fin.position.set(-0.95, 0, 1.15);
+  fin.rotation.y = -0.35;
+  group.add(fin);
+
+  const canopy = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), WHITE_FLAT);
+  canopy.scale.set(0.75, 0.28, 0.32);
+  canopy.position.set(0.85, 0, 0.82);
+  canopy.rotation.y = 0.45;
   group.add(canopy);
 
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.8, 8), SELF_LIT);
-  flame.rotation.z = Math.PI / 2; // tip points toward -x
-  flame.position.set(-1.7, 0, 0);
+  const flame = new THREE.Group();
+  flame.position.set(-1.55, 0, 0.15);
+  for (const y of [-0.85, 0.85]) {
+    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.2, 16), WHITE_SMOOTH);
+    pod.rotation.z = Math.PI / 2;
+    pod.position.set(-1.1, y, 0.2);
+    group.add(pod);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.26, 1.5, 8), SELF_LIT);
+    cone.rotation.z = Math.PI / 2; // tip points toward -x
+    cone.position.set(-0.75, y, 0.05);
+    flame.add(cone);
+  }
   flame.visible = false;
   group.add(flame);
   group.userData.flame = flame;

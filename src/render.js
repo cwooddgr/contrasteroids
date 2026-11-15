@@ -46,8 +46,8 @@ export class Renderer {
     this.sun = new THREE.DirectionalLight(0xffffff, 3);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(4096, 4096);
-    this.sun.shadow.bias = -0.0004;
-    this.sun.shadow.normalBias = 0.06;
+    this.sun.shadow.bias = -0.0008;
+    this.sun.shadow.normalBias = 0.1;
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
 
@@ -122,10 +122,24 @@ export class Renderer {
     const dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el));
     this.sun.position.copy(dir).multiplyScalar(150);
     this.sun.target.position.set(0, 0, 0);
-    const s = Math.max(this.W, this.H) * 0.75 + 20;
+    this.sun.target.updateMatrixWorld();
+    // Fit the shadow camera tightly around the playfield slab as seen from the
+    // sun, so every shadow-map texel lands on the play area.
     const cam = this.sun.shadow.camera;
-    cam.left = -s; cam.right = s; cam.top = s; cam.bottom = -s;
-    cam.near = 1; cam.far = 320;
+    cam.position.copy(this.sun.position);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const inv = cam.matrixWorldInverse;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    const v = new THREE.Vector3();
+    for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {
+      v.set(x * (this.W / 2 + 12), y * (this.H / 2 + 12), z * 12).applyMatrix4(inv);
+      minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
+      minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
+      minZ = Math.min(minZ, v.z); maxZ = Math.max(maxZ, v.z);
+    }
+    cam.left = minX; cam.right = maxX; cam.bottom = minY; cam.top = maxY;
+    cam.near = Math.max(0.1, -maxZ - 1); cam.far = -minZ + 1;
     cam.updateProjectionMatrix();
   }
 
