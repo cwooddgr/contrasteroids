@@ -217,7 +217,7 @@ export class Sound {
   }
 
   // Filtered noise with a cutoff sweep and decay.
-  burst(type, cutoff0, cutoff1, dur, level, delay = 0, q = 0.7) {
+  burst(type, cutoff0, cutoff1, dur, level, delay = 0, q = 0.7, attack = 0) {
     if (!this.ctx) return;
     const ctx = this.ctx;
     const t = ctx.currentTime + delay;
@@ -230,7 +230,12 @@ export class Sound {
     f.frequency.setValueAtTime(cutoff0, t);
     f.frequency.exponentialRampToValueAtTime(cutoff1, t + dur);
     const g = ctx.createGain();
-    g.gain.setValueAtTime(level, t);
+    if (attack > 0) {
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(level, t + attack);
+    } else {
+      g.gain.setValueAtTime(level, t);
+    }
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(f).connect(g).connect(this.bus);
     src.start(t, Math.random());
@@ -256,6 +261,19 @@ export class Sound {
     this.burst('bandpass', 900 * jitter, 120, 0.25 + size * 0.5, 0.25, 0.04, 1.5); // debris rattle
     this.tone('sine', (120 - size * 18) * jitter, 24, 0.5 + size * 0.45, 0.55 + size * 0.15); // sub boom
     this.tone('sine', (90 - size * 10) * jitter, 35, 0.25 + size * 0.2, 0.5, 0, this.drive); // driven thud
+  }
+
+  // Rocks thud and boom rather than bang: no high crack, a soft attack, and
+  // everything pitched lower as the rock gets bigger. size: 1, 2, or 3.
+  rockBreak(size) {
+    const j = 0.9 + Math.random() * 0.2;
+    const cutoff = [0, 700, 380, 200][size] * j;
+    const subFrom = [0, 95, 68, 50][size] * j;
+    const subTo = [0, 42, 30, 22][size];
+    const len = [0, 0.45, 0.8, 1.3][size];
+    this.burst('lowpass', cutoff, 40, len, 0.9, 0, 1.2, 0.012); // dull body
+    this.tone('sine', subFrom, subTo, len * 1.1, 0.7 + size * 0.1, 0, this.bus, 0.008); // sub boom
+    this.tone('sine', subFrom * 1.5, subTo * 1.2, len * 0.5, 0.35, 0, this.drive, 0.006); // thud you can hear on small speakers
   }
 
   alienDeath() {

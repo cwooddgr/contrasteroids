@@ -677,7 +677,10 @@ export class Game {
   // ---------- effects ----------
 
   explode(x, y, size, isRock, silent = false) {
-    if (!silent) this.sound.explode(size);
+    if (!silent) {
+      if (isRock) this.sound.rockBreak(size);
+      else this.sound.explode(size);
+    }
     this.r.flash(x, y, 6 + size * 6, 0.18 + size * 0.06);
     this.burstSparks(x, y, Math.round(10 + size * 10), 20 + size * 8);
     const n = isRock ? 3 + size * 2 : 6;
