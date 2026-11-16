@@ -10,7 +10,7 @@ Shoot the rocks and they split into smaller ones. Rocks that collide with each o
 
 ## Controls
 
-The game needs a keyboard.
+On a keyboard:
 
 | Key | Action |
 | --- | --- |
@@ -21,6 +21,8 @@ The game needs a keyboard.
 | Enter | Start |
 | P | Pause |
 | M | Sound on or off |
+
+On a phone or tablet, buttons appear on screen. Your left thumb rotates and your right thumb thrusts and fires. H jumps to hyperspace. Tap the screen to start, and to carry on after a pause. The screen is roomier if you hold the phone sideways.
 
 ## Scoring
 

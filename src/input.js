@@ -15,6 +15,11 @@ export class Input {
     window.addEventListener('blur', () => this.down.clear());
   }
 
+  // Virtual keys from the touch controls share the same state as the keyboard.
+  press(code) { if (!this.down.has(code)) this.hits.add(code); this.down.add(code); }
+  release(code) { this.down.delete(code); }
+  tap(code) { this.hits.add(code); }
+
   held(...codes) { return codes.some((c) => this.down.has(c)); }
   pressed(...codes) { return codes.some((c) => this.hits.has(c)); }
   endFrame() { this.hits.clear(); }

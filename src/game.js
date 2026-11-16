@@ -177,7 +177,7 @@ export class Game {
     if (inp.pressed('KeyM')) this.sound.toggleMute();
 
     if (this.mode === 'play') {
-      if (inp.pressed('KeyP', 'Escape')) {
+      if (inp.pressed('KeyP', 'Escape') || (this.paused && inp.pressed('Tap'))) {
         this.paused = !this.paused;
         if (this.paused) this.sound.silenceLoops();
       }
@@ -187,7 +187,7 @@ export class Game {
       this.updateMines(dt);
       this.collide();
       this.updateWave(dt);
-    } else if (inp.pressed('Enter', 'NumpadEnter')) {
+    } else if (inp.pressed('Enter', 'NumpadEnter', 'Tap')) {
       this.start();
       return;
     }
@@ -746,7 +746,7 @@ export class Game {
     const blinkOn = Math.floor(this.time * 2) % 2 === 0;
     const key = [
       this.mode, this.score, this.hi, this.lives, this.paused, this.dev && Math.round(this.r.lightAzimuth),
-      this.dev && Math.round(this.r.lightElevation), this.bannerTimer > 0 && this.banner, blinkOn,
+      this.dev && Math.round(this.r.lightElevation), this.bannerTimer > 0 && this.banner, blinkOn, this.touch,
     ].join('|');
     if (key === this.hudKey && !this.r.hudDirty) return;
     this.hudKey = key;
@@ -760,16 +760,29 @@ export class Game {
     c.textBaseline = 'top';
     const font = (px) => `700 ${Math.round(px)}px "Courier New", ui-monospace, monospace`;
     const text = (s, x, y, px, align = 'left', spacing = 0) => {
-      c.font = font(px);
       c.textAlign = align;
-      if ('letterSpacing' in c) c.letterSpacing = `${Math.round(spacing)}px`;
+      // Shrink anything that would run off a narrow (portrait) screen.
+      for (let i = 0; i < 2; i++) {
+        c.font = font(px);
+        if ('letterSpacing' in c) c.letterSpacing = `${Math.round(spacing)}px`;
+        const fit = (w * 0.92) / c.measureText(s).width;
+        if (fit >= 1) break;
+        px *= fit;
+        spacing *= fit;
+      }
       c.fillText(s, x, y);
     };
+    const go = this.touch ? 'TAP TO START' : 'PRESS ENTER';
 
     if (this.mode === 'title') {
       text('CONTRASTEROIDS', w / 2, h * 0.3, k * 8, 'center', k * 1.2);
-      if (blinkOn) text('PRESS ENTER', w / 2, h * 0.47, k * 3.6, 'center', k * 0.5);
-      const lines = [
+      if (blinkOn) text(go, w / 2, h * 0.47, k * 3.6, 'center', k * 0.5);
+      const lines = this.touch ? [
+        'LEFT THUMB  ROTATE',
+        'RIGHT THUMB  THRUST  FIRE',
+        'H  HYPERSPACE',
+        ...(w < h ? ['', 'TURN SIDEWAYS FOR MORE ROOM'] : []),
+      ] : [
         'LEFT / RIGHT  ROTATE      UP  THRUST',
         'SPACE  FIRE      SHIFT  HYPERSPACE',
         'P  PAUSE      M  MUTE',
@@ -782,9 +795,10 @@ export class Game {
       for (let i = 0; i < Math.min(this.lives, 10); i++) this.lifeIcon(c, k * (4 + i * 3.4), k * 9.5, k * 1.2);
       if (this.mode === 'gameover') {
         text('GAME OVER', w / 2, h * 0.4, k * 7, 'center', k);
-        if (blinkOn) text('PRESS ENTER', w / 2, h * 0.55, k * 3.2, 'center', k * 0.5);
+        if (blinkOn) text(go, w / 2, h * 0.55, k * 3.2, 'center', k * 0.5);
       } else if (this.paused) {
         text('PAUSED', w / 2, h * 0.45, k * 6, 'center', k);
+        if (this.touch) text('TAP TO RESUME', w / 2, h * 0.55, k * 3, 'center', k * 0.5);
       } else if (this.bannerTimer > 0) {
         text(this.banner, w / 2, h * 0.42, k * 5, 'center', k);
       }

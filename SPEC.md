@@ -38,10 +38,14 @@ Implementation: render the lit scene to an MSAA render target, then a fullscreen
 - Screen wrap for everything except alien entries/exits; objects wrap once fully offscreen.
 - Respawn in the center with a short blinking invulnerability.
 
-## Controls (keyboard only, U)
+## Controls
+
+Keyboard (U):
 
 - Left/Right or A/D rotate, Up or W thrust, Space fire, Shift or Down/S hyperspace
 - Enter start, P pause, M mute
+
+Touch (Charlie asked for touch controls, U), shown on coarse-pointer devices or after the first touch: rotate left/right buttons bottom left; thrust, fire, and a small H (hyperspace) bottom right; mute and pause top right. Sliding a thumb between buttons switches without lifting. Tapping open screen starts the game or resumes from pause. The overlay is DOM, drawn black and white to match. The world keeps its fixed height, so portrait is cramped and the title screen suggests turning sideways.
 
 ## Sound
 

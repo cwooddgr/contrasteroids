@@ -16,4 +16,18 @@
 - I wrote the site card text; Charlie hasn't approved it. For Invaders he replaced my draft with his own.
 - I didn't make a claude.ai artifact. Invaders has a private one because it's a single HTML file, and this is a Vite build with three.js bundled.
 - The README banner and the site card are the title screen, captured straight from the game canvas so they stay pure black and white.
-- The game is keyboard only, so the card and README say so. Touch controls are not built.
+- ~~The game is keyboard only, so the card and README say so. Touch controls are not built.~~ Superseded below.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-15
+> **Status:** decided-by-user
+
+- Charlie replaced the site card text with his own, which doesn't mention a keyboard, then asked for touch controls ("add touch controls for phone losers").
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-15
+> **Status:** proposed-by-agent
+
+- I built the touch controls as a DOM overlay (`src/touch.js`) that feeds virtual key codes into `Input`, so the game logic didn't change apart from a `Tap` code for start and resume.
+- I kept the fixed 100-unit world height rather than rescaling for portrait, and added a "turn sideways" hint on the title screen instead. Not confirmed; portrait play is cramped.
+- Tested in desktop Chrome with synthetic touch pointer events, not yet on a real phone.

@@ -21,4 +21,4 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 
 ## Status
 
-2026-11-15: live at https://dgrlabs.co/contrasteroids/. Sun angle still being tuned; keyboard only (no touch controls).
+2026-11-15: live at https://dgrlabs.co/contrasteroids/. Sun angle still being tuned; touch controls added (`src/touch.js`), not yet tried on a real phone.
