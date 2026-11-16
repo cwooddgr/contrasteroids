@@ -165,7 +165,7 @@ export class Renderer {
       const b = bullets[i];
       if (b) {
         p.position.set(b.x, b.y, 2);
-        p.intensity = Math.PI;
+        p.intensity = Math.PI * (0.8 + Math.random() * 0.35); // flickers with the sparkle
       } else {
         p.intensity = 0;
       }
@@ -184,12 +184,46 @@ export class Renderer {
       pos[i * 3 + 1] = (Math.random() - 0.5) * this.H;
       pos[i * 3 + 2] = -80;
     }
+    // Twinkle, like the sparkle setting on a string of Christmas lights: each
+    // star rests at its own brightness and now and then flares briefly to
+    // full white, on its own rhythm.
+    const base = new Float32Array(count);
+    const rate = new Float32Array(count);
+    const phase = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      base[i] = 0.65 + Math.random() * 0.3;
+      rate[i] = 0.4 + Math.random() * 1.2;
+      phase[i] = Math.random() * 100;
+    }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('aBase', new THREE.BufferAttribute(base, 1));
+    g.setAttribute('aRate', new THREE.BufferAttribute(rate, 1));
+    g.setAttribute('aPhase', new THREE.BufferAttribute(phase, 1));
     // One CSS pixel per star (two physical pixels on Retina), so black rocks
     // read as holes in the starfield.
     const size = Math.max(1, Math.round(this.renderer.getPixelRatio()));
-    this.stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size, sizeAttenuation: false }));
+    this.starTime = this.starTime || { value: 0 };
+    this.stars = new THREE.Points(g, new THREE.ShaderMaterial({
+      uniforms: { uTime: this.starTime, uSize: { value: size } },
+      vertexShader: /* glsl */ `
+        attribute float aBase;
+        attribute float aRate;
+        attribute float aPhase;
+        uniform float uTime;
+        uniform float uSize;
+        varying float vB;
+        void main() {
+          // A sharp peak once per cycle; most of the cycle sits at the base level.
+          float flare = pow(max(0.0, sin(uTime * aRate + aPhase)), 40.0);
+          vB = mix(aBase, 1.0, flare);
+          gl_PointSize = uSize;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: /* glsl */ `
+        varying float vB;
+        void main() { gl_FragColor = vec4(vec3(vB), 1.0); }`,
+    }));
     this.scene.add(this.stars);
   }
 
@@ -206,6 +240,7 @@ export class Renderer {
   }
 
   update(dt) {
+    this.starTime.value += dt;
     for (const p of this.flashes) {
       if (p.userData.life > 0) {
         p.userData.life -= dt;

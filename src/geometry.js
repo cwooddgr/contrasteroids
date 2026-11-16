@@ -20,8 +20,7 @@ function binaryLambert(material) {
   return material;
 }
 
-// The ship carries its lights inside it, so they can't show its shape. It is
-// shaded instead by a fixed key light from the upper-left, low over the plane
+// Ships, ours and the aliens', light themselves. They are shaded instead by a fixed key light from the upper-left, low over the plane
 // (the old sun angle), binary like everything else. The camera looks straight
 // down with no roll, so view space has the same axes as world space.
 function shipKey(material) {
@@ -146,6 +145,14 @@ function finish(obj) {
   return obj;
 }
 
+// Ships light themselves (Charlie's call): no shadows cast or received.
+function selfShaded(obj) {
+  obj.traverse((o) => {
+    if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; }
+  });
+  return obj;
+}
+
 // --- the player ship, pointing along +x ---
 // A sharp center ridge with steep flanks: under the key light one flank is lit
 // and the other is black, and they swap as the ship turns.
@@ -189,24 +196,23 @@ export function makeShip() {
   flame.visible = false;
   group.add(flame);
   group.userData.flame = flame;
-  // The lights sit inside the ship; it must not shadow them.
-  group.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
-  return group;
+  // The ship's lights sit inside it; it must not shadow them.
+  return selfShaded(group);
 }
 
 // --- Skiff: a spindle with fins, long axis along x ---
 export function makeSkiff() {
   const group = new THREE.Group();
   const spin = new THREE.Group();
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), WHITE_FLAT);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), SHIP_FLAT);
   nose.rotation.z = -Math.PI / 2;
   nose.position.x = 1.2;
-  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), WHITE_FLAT);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), SHIP_FLAT);
   tail.rotation.z = Math.PI / 2;
   tail.position.x = -1.2;
   spin.add(nose, tail);
   for (let i = 0; i < 3; i++) {
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.5), WHITE_FLAT);
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.5), SHIP_FLAT);
     const holder = new THREE.Group();
     fin.position.set(-1.0, 0, 0.9);
     holder.add(fin);
@@ -215,17 +221,17 @@ export function makeSkiff() {
   }
   group.add(spin);
   group.userData.spin = spin;
-  return finish(group);
+  return selfShaded(group);
 }
 
 // --- Layer: a ring with a hub and spokes ---
 export function makeLayer() {
   const group = new THREE.Group();
   const spin = new THREE.Group();
-  spin.add(new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.55, 14, 40), WHITE_SMOOTH));
-  spin.add(new THREE.Mesh(new THREE.SphereGeometry(1.1, 20, 14), WHITE_SMOOTH));
+  spin.add(new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.55, 14, 40), SHIP_SMOOTH));
+  spin.add(new THREE.Mesh(new THREE.SphereGeometry(1.1, 20, 14), SHIP_SMOOTH));
   for (let i = 0; i < 3; i++) {
-    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.5, 8), WHITE_SMOOTH);
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.5, 8), SHIP_SMOOTH);
     spoke.position.y = 1.25;
     const holder = new THREE.Group();
     holder.add(spoke);
@@ -235,22 +241,22 @@ export function makeLayer() {
   spin.rotation.x = 0.9;
   group.add(spin);
   group.userData.spin = spin;
-  return finish(group);
+  return selfShaded(group);
 }
 
 // --- Hunter: a sharp stretched double pyramid pointing along +x ---
 export function makeHunter() {
   const group = new THREE.Group();
   const spin = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), WHITE_FLAT);
+  const body = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), SHIP_FLAT);
   body.scale.set(2.4, 0.95, 0.95);
   spin.add(body);
-  const collar = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.16, 6, 4), WHITE_FLAT);
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.16, 6, 4), SHIP_FLAT);
   collar.rotation.y = Math.PI / 2;
   spin.add(collar);
   group.add(spin);
   group.userData.spin = spin;
-  return finish(group);
+  return selfShaded(group);
 }
 
 // --- Mine: a spiked ball with a self-lit blinker ---

@@ -17,8 +17,8 @@ const TURN = 4.6;
 const THRUST = 55;
 const DRAG = 0.55;
 const MAX_SPEED = 65;
-const BULLET_SPEED = 85;
-const BULLET_LIFE = 0.95;
+const BULLET_SPEED = 55;
+const BULLET_LIFE = 1.3;
 const MAX_BULLETS = 5;
 const FIRE_COOLDOWN = 0.16;
 const EXTRA_LIFE = 10000;
@@ -335,6 +335,7 @@ export class Game {
   }
 
   updateBullets(list, dt) {
+    const sparkle = list === this.bullets;
     for (let i = list.length - 1; i >= 0; i--) {
       const b = list[i];
       b.life -= dt;
@@ -344,6 +345,15 @@ export class Game {
       this.wrap(b);
       b.mesh.position.set(b.x, b.y, 0);
       b.mesh.rotation.z += dt * 8;
+      // Our shots sparkle, which is why they light the rocks they pass: the
+      // core flickers in size and sheds a thin trail of short-lived sparks.
+      if (sparkle) {
+        b.mesh.scale.setScalar(rand(0.7, 1.4));
+        if (Math.random() < dt * 40 && this.sparks.length < this.SPARK_MAX) {
+          const a = rand(0, Math.PI * 2), sp = rand(2, 7);
+          this.sparks.push({ x: b.x, y: b.y, vx: b.vx * 0.15 + Math.cos(a) * sp, vy: b.vy * 0.15 + Math.sin(a) * sp, life: rand(0.08, 0.22) });
+        }
+      }
     }
   }
 
