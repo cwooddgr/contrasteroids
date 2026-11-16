@@ -6,6 +6,7 @@ const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.
 const p = await b.newPage();
 await p.setViewport({ width: 1200, height: 630, deviceScaleFactor: 1 });
 await p.goto('http://localhost:5199/', { waitUntil: 'networkidle0' });
+await p.evaluate(() => document.fonts.ready); // the HUD font (Audiowide) must be loaded
 await new Promise(r => setTimeout(r, 1500));
 await p.evaluate(() => {
   const g = window.__game;

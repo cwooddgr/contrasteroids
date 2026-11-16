@@ -25,4 +25,4 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 
 ## Status
 
-2026-11-16: Easy and Hard modes, twinkling stars, sparkly shots, and the Audiowide font are live at https://dgrlabs.co/contrasteroids/. The banner, site card, and og.png show the Easy title screen.
+2026-11-16: Easy and Hard modes (Hard has glowing ships and mines), twinkling stars, sparkly shots, and the Audiowide font are live at https://dgrlabs.co/contrasteroids/. History: `docs/status.md`.
