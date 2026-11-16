@@ -153,6 +153,32 @@ function selfShaded(obj) {
   return obj;
 }
 
+// A soft radial glow drawn under a light-carrying object, so it's clear where
+// the light on nearby rocks comes from. Additive, so it only brightens.
+let glowTexture = null;
+export function makeGlow(radius, strength) {
+  if (!glowTexture) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.25, 'rgba(255,255,255,0.45)');
+    grad.addColorStop(0.6, 'rgba(255,255,255,0.12)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 128, 128);
+    glowTexture = new THREE.CanvasTexture(c);
+  }
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture, color: new THREE.Color(strength, strength, strength),
+    blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+  }));
+  sprite.scale.setScalar(radius * 2);
+  sprite.position.z = -1.5; // under the hull, so the ship sits on its glow
+  return sprite;
+}
+
 // --- the player ship, pointing along +x ---
 // A sharp center ridge with steep flanks: under the key light one flank is lit
 // and the other is black, and they swap as the ship turns.
@@ -196,6 +222,9 @@ export function makeShip() {
   flame.visible = false;
   group.add(flame);
   group.userData.flame = flame;
+  const glow = makeGlow(7, 0.5);
+  group.add(glow);
+  group.userData.glow = glow;
   // The ship's lights sit inside it; it must not shadow them.
   return selfShaded(group);
 }
