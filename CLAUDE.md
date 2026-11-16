@@ -16,6 +16,7 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 - The HUD is a 2D canvas thresholded in the same pass, and it is uploaded only when its content key changes (`Game.drawHud`).
 - `index.html` links `/assets/a11y.css` and `/assets/a11y.js` from dgrlabs.co; they 404 harmlessly in dev.
 - `docs/banner.jpg` and `dgrlabs_co/assets/contrasteroids.jpg` are the title screen read straight from the canvas (`toDataURL` right after `__game.r.render()`); regenerate them if the look changes.
+- `public/og.png` is the 1200x630 link-preview card, captured from the canvas with a title-and-URL HUD by `docs/og-capture.mjs`; regenerate it with them.
 - Public text (README, site card, in-game copy) follows the workspace no-AI-tells rule.
 - iOS touch quirks in `src/touch.js` (see `docs/decisions.md`): the overlay cancels touchstart/touchmove/touchend because Safari double-tap zooms despite `touch-action: none` (WebKit bug 218015), and audio unlocks on pointerup/touchend, never pointerdown. `src/audio.js` sets the audio session to playback so the silent switch doesn't mute it.
 - Backtick toggles dev mode: J/L turn the sun's azimuth, I/K its elevation.
