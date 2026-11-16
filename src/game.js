@@ -198,6 +198,7 @@ export class Game {
     this.updateBullets(this.enemyBullets, dt);
     this.updateDebris(dt);
     this.updateSparks(dt);
+    this.updateLights(dt);
     this.r.update(dt);
     if (this.bannerTimer > 0) this.bannerTimer -= dt;
   }
@@ -209,15 +210,34 @@ export class Game {
     }
   }
 
+  // Dev keys: J/L cone width, I/K spotlight range, U/O halo range.
   tuneLight(dt) {
-    const inp = this.input;
-    let changed = false;
-    if (inp.held('KeyJ')) { this.r.lightAzimuth += 60 * dt; changed = true; }
-    if (inp.held('KeyL')) { this.r.lightAzimuth -= 60 * dt; changed = true; }
-    if (inp.held('KeyI')) { this.r.lightElevation = Math.min(89, this.r.lightElevation + 30 * dt); changed = true; }
-    if (inp.held('KeyK')) { this.r.lightElevation = Math.max(-30, this.r.lightElevation - 30 * dt); changed = true; }
-    this.r.lightAzimuth = (this.r.lightAzimuth + 360) % 360;
-    if (changed) this.r.updateSun();
+    const inp = this.input, r = this.r;
+    const adj = (code, d) => (inp.held(code) ? d * dt : 0);
+    r.coneDeg = THREE.MathUtils.clamp(r.coneDeg + adj('KeyL', 30) - adj('KeyJ', 30), 10, 180);
+    r.spotRange = THREE.MathUtils.clamp(r.spotRange + adj('KeyI', 30) - adj('KeyK', 30), 10, 250);
+    r.haloRange = THREE.MathUtils.clamp(r.haloRange + adj('KeyO', 15) - adj('KeyU', 15), 0, 80);
+    r.applyLightTuning();
+  }
+
+  // The lights live on the ship. On the title screen a parked ship slowly
+  // turns so its beam sweeps the rocks.
+  updateLights(dt) {
+    const p = this.player;
+    if (this.mode === 'title') {
+      p.angle += dt * 0.35;
+      this.ship.visible = true;
+      this.ship.userData.flame.visible = false;
+      // Parked in the gap between PRESS ENTER and the controls list.
+      this.ship.position.set(0, -5, 0);
+      this.ship.rotation.set(0, 0, p.angle);
+      this.r.shipLights(0, -5, p.angle, true);
+    } else {
+      const on = this.mode === 'play' && p.alive && p.hyper <= 0;
+      if (this.mode !== 'play') this.ship.visible = false;
+      this.r.shipLights(p.x, p.y, p.angle, on);
+    }
+    this.r.bulletLightsFor(this.bullets);
   }
 
   wrap(e) {
@@ -740,13 +760,13 @@ export class Game {
     pos.needsUpdate = true;
   }
 
-  // ---------- HUD (drawn in white, thresholded to 1-bit with the scene) ----------
+  // ---------- HUD (drawn in white, kept pure black and white by the post pass) ----------
 
   drawHud() {
     const blinkOn = Math.floor(this.time * 2) % 2 === 0;
     const key = [
-      this.mode, this.score, this.hi, this.lives, this.paused, this.dev && Math.round(this.r.lightAzimuth),
-      this.dev && Math.round(this.r.lightElevation), this.bannerTimer > 0 && this.banner, blinkOn, this.touch,
+      this.mode, this.score, this.hi, this.lives, this.paused,
+      this.dev && [this.r.coneDeg, this.r.spotRange, this.r.haloRange].map(Math.round).join(), this.bannerTimer > 0 && this.banner, blinkOn, this.touch,
     ].join('|');
     if (key === this.hudKey && !this.r.hudDirty) return;
     this.hudKey = key;
@@ -804,7 +824,7 @@ export class Game {
       }
     }
     if (this.dev) {
-      text(`LIGHT AZ ${Math.round(this.r.lightAzimuth)}  EL ${Math.round(this.r.lightElevation)}  (J/L I/K)`,
+      text(`CONE ${Math.round(this.r.coneDeg)}  RANGE ${Math.round(this.r.spotRange)}  HALO ${Math.round(this.r.haloRange)}  (J/L I/K U/O)`,
         k * 3, h - k * 5, k * 2.2);
     }
     this.r.hudTexture.needsUpdate = true;

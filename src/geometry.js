@@ -1,10 +1,44 @@
-// Procedural meshes. Everything is plain white; the sun does the rest.
+// Procedural meshes. Everything is plain white; the ship's lights do the rest.
 import * as THREE from 'three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 
-export const WHITE_SMOOTH = new THREE.MeshLambertMaterial({ color: 0xffffff });
-export const WHITE_FLAT = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
+// Lit surfaces: a face is either turned toward a light or not (no Lambert
+// gradient), so terminators stay razor sharp. Only distance falloff, the
+// spotlight cone, and shadows scale the light, which is what makes grey.
+function binaryLambert(material) {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <lights_lambert_pars_fragment>',
+      THREE.ShaderChunk.lights_lambert_pars_fragment.replace(
+        'float dotNL = saturate( dot( geometryNormal, directLight.direction ) );',
+        'float dotNL = step( 0.02, dot( geometryNormal, directLight.direction ) );',
+      ),
+    );
+  };
+  material.customProgramCacheKey = () => 'binary-lambert';
+  return material;
+}
+
+// The ship carries its lights inside it, so they can't show its shape. It is
+// shaded instead by a fixed key light from the upper-left, low over the plane
+// (the old sun angle), binary like everything else. The camera looks straight
+// down with no roll, so view space has the same axes as world space.
+function shipKey(material) {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <opaque_fragment>',
+      'gl_FragColor = vec4( vec3( step( 0.0, dot( normal, normalize( vec3( -0.683, 0.683, 0.259 ) ) ) ) ), 1.0 );',
+    );
+  };
+  material.customProgramCacheKey = () => 'ship-key';
+  return material;
+}
+
+export const WHITE_SMOOTH = binaryLambert(new THREE.MeshLambertMaterial({ color: 0xffffff }));
+export const WHITE_FLAT = binaryLambert(new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }));
+const SHIP_SMOOTH = shipKey(new THREE.MeshLambertMaterial({ color: 0xffffff }));
+const SHIP_FLAT = shipKey(new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }));
 export const SELF_LIT = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
 // --- small seeded RNG and 3D value noise ---
@@ -113,9 +147,8 @@ function finish(obj) {
 }
 
 // --- the player ship, pointing along +x ---
-// A sharp center ridge with steep flanks: at our low sun one flank is lit and
-// the other is black, and they swap as the ship turns. The fin and engine
-// pods cast shadows across the hull.
+// A sharp center ridge with steep flanks: under the key light one flank is lit
+// and the other is black, and they swap as the ship turns.
 export function makeShip() {
   const group = new THREE.Group();
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -128,14 +161,14 @@ export function makeShip() {
     V(0.9, 0.55, 0.05), V(0.9, -0.55, 0.05), // forward chines
     V(0.2, 0, -0.45), V(-1.2, 0, -0.35), // keel
   ]);
-  group.add(new THREE.Mesh(hull, WHITE_FLAT));
+  group.add(new THREE.Mesh(hull, SHIP_FLAT));
 
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.8), WHITE_FLAT);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.8), SHIP_FLAT);
   fin.position.set(-0.95, 0, 1.15);
   fin.rotation.y = -0.35;
   group.add(fin);
 
-  const canopy = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), WHITE_FLAT);
+  const canopy = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), SHIP_FLAT);
   canopy.scale.set(0.75, 0.28, 0.32);
   canopy.position.set(0.85, 0, 0.82);
   canopy.rotation.y = 0.45;
@@ -144,7 +177,7 @@ export function makeShip() {
   const flame = new THREE.Group();
   flame.position.set(-1.55, 0, 0.15);
   for (const y of [-0.85, 0.85]) {
-    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.2, 16), WHITE_SMOOTH);
+    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.2, 16), SHIP_SMOOTH);
     pod.rotation.z = Math.PI / 2;
     pod.position.set(-1.1, y, 0.2);
     group.add(pod);
@@ -156,7 +189,9 @@ export function makeShip() {
   flame.visible = false;
   group.add(flame);
   group.userData.flame = flame;
-  return finish(group);
+  // The lights sit inside the ship; it must not shadow them.
+  group.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+  return group;
 }
 
 // --- Skiff: a spindle with fins, long axis along x ---

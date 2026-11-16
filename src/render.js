@@ -1,4 +1,5 @@
-// Rendering: one sun, no ambient, hard shadows, then a 1-bit threshold pass.
+// Rendering: the ship's spotlight and halo, bullet lights, and explosion
+// flashes; no ambient, hard shadows; light fades to black with distance.
 import * as THREE from 'three';
 
 export const WORLD_H = 100; // world units, top to bottom of the screen
@@ -8,7 +9,9 @@ varying vec2 vUv;
 void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
 `;
 
-// Any light at all is white; anything unlit is black. HUD alpha is ORed in.
+// Lights are scaled so a fully lit surface comes out at 1.0, and the falloff
+// with distance shows as grey. Tiny values go to black so nothing glows
+// faintly by accident. The HUD stays pure black and white and is ORed in.
 const THRESHOLD_FS = /* glsl */ `
 uniform sampler2D tScene;
 uniform sampler2D tHud;
@@ -16,8 +19,8 @@ uniform float uThreshold;
 varying vec2 vUv;
 void main() {
   vec3 c = texture2D(tScene, vUv).rgb;
-  float lum = max(c.r, max(c.g, c.b));
-  float v = step(uThreshold, lum);
+  float lum = min(1.0, max(c.r, max(c.g, c.b)));
+  float v = lum * step(uThreshold, lum);
   v = max(v, step(0.5, texture2D(tHud, vUv).a));
   gl_FragColor = vec4(vec3(v), 1.0);
 }
@@ -39,22 +42,44 @@ export class Renderer {
     this.camera.position.set(0, 0, 150);
     this.camera.lookAt(0, 0, 0);
 
-    // The sun. Azimuth is measured in the screen plane (135° = upper-left),
-    // elevation above the play plane.
-    this.lightAzimuth = 135;
-    this.lightElevation = 15;
-    this.sun = new THREE.DirectionalLight(0xffffff, 3);
-    this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(4096, 4096);
-    this.sun.shadow.bias = -0.0008;
-    this.sun.shadow.normalBias = 0.1;
-    this.scene.add(this.sun);
-    this.scene.add(this.sun.target);
+    // Light intensities are multiplied by PI to cancel Lambert's 1/PI, so a
+    // fully lit surface renders at exactly 1.0 before falloff. decay = 0 with a
+    // cutoff distance gives three's windowed falloff, (1 - (d/range)^4)^2:
+    // near full brightness close in, fading to black at the range.
+    // The ship's spotlight: tunable in dev mode.
+    this.coneDeg = 50; // full cone width
+    this.spotRange = 75;
+    this.haloRange = 16;
+    this.lightHeight = 3; // above the play plane
+    this.spot = new THREE.SpotLight(0xffffff, 0, this.spotRange, 0, 0, 0);
+    this.spot.castShadow = true;
+    this.spot.shadow.mapSize.set(2048, 2048);
+    this.spot.shadow.bias = -0.0005;
+    this.spot.shadow.normalBias = 0.05;
+    this.spot.shadow.camera.near = 0.5;
+    this.scene.add(this.spot);
+    this.scene.add(this.spot.target);
+    // A dim glow all around the ship, so nothing arrives in total darkness.
+    this.halo = new THREE.PointLight(0xffffff, 0, this.haloRange, 0);
+    this.haloLevel = 0.55;
+    this.scene.add(this.halo);
+    this.applyLightTuning();
+
+    // Bullet lights: a fixed pool (one per allowed player shot) so the
+    // shader's light count never changes. No shadows, to spare phones.
+    this.bulletRange = 9;
+    this.bulletLights = [];
+    for (let i = 0; i < 5; i++) {
+      const p = new THREE.PointLight(0xffffff, 0, this.bulletRange, 0);
+      this.scene.add(p);
+      this.bulletLights.push(p);
+    }
 
     // Explosion flashes: a fixed pool so the shader's light count never changes.
     this.flashes = [];
     for (let i = 0; i < 3; i++) {
       const p = new THREE.PointLight(0xffffff, 0, 0, 2);
+      p.castShadow = false;
       p.userData.life = 0;
       p.userData.max = 1;
       p.userData.peak = 0;
@@ -112,35 +137,39 @@ export class Renderer {
     this.camera.top = this.H / 2;
     this.camera.bottom = -this.H / 2;
     this.camera.updateProjectionMatrix();
-    this.updateSun();
     this.buildStars();
   }
 
-  updateSun() {
-    const az = THREE.MathUtils.degToRad(this.lightAzimuth);
-    const el = THREE.MathUtils.degToRad(this.lightElevation);
-    const dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el));
-    this.sun.position.copy(dir).multiplyScalar(150);
-    this.sun.target.position.set(0, 0, 0);
-    this.sun.target.updateMatrixWorld();
-    // Fit the shadow camera tightly around the playfield slab as seen from the
-    // sun, so every shadow-map texel lands on the play area.
-    const cam = this.sun.shadow.camera;
-    cam.position.copy(this.sun.position);
-    cam.lookAt(0, 0, 0);
-    cam.updateMatrixWorld();
-    const inv = cam.matrixWorldInverse;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
-    const v = new THREE.Vector3();
-    for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {
-      v.set(x * (this.W / 2 + 12), y * (this.H / 2 + 12), z * 12).applyMatrix4(inv);
-      minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
-      minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
-      minZ = Math.min(minZ, v.z); maxZ = Math.max(maxZ, v.z);
-    }
-    cam.left = minX; cam.right = maxX; cam.bottom = minY; cam.top = maxY;
-    cam.near = Math.max(0.1, -maxZ - 1); cam.far = -minZ + 1;
-    cam.updateProjectionMatrix();
+  applyLightTuning() {
+    this.spot.angle = THREE.MathUtils.degToRad(this.coneDeg / 2);
+    this.spot.distance = this.spotRange;
+    this.spot.shadow.camera.far = this.spotRange;
+    this.halo.distance = this.haloRange;
+  }
+
+  // Place the ship's lights. angle is the ship's heading; on=false (dead, in
+  // hyperspace, or no ship) turns them off.
+  shipLights(x, y, angle, on) {
+    const c = Math.cos(angle), s = Math.sin(angle);
+    this.spot.position.set(x + c * 2.8, y + s * 2.8, this.lightHeight);
+    this.spot.target.position.set(x + c * 30, y + s * 30, 0);
+    this.spot.target.updateMatrixWorld();
+    this.spot.intensity = on ? Math.PI : 0;
+    this.halo.position.set(x, y, this.lightHeight);
+    this.halo.intensity = on ? Math.PI * this.haloLevel : 0;
+  }
+
+  // Bullet lights follow the first few player bullets.
+  bulletLightsFor(bullets) {
+    this.bulletLights.forEach((p, i) => {
+      const b = bullets[i];
+      if (b) {
+        p.position.set(b.x, b.y, 2);
+        p.intensity = Math.PI;
+      } else {
+        p.intensity = 0;
+      }
+    });
   }
 
   buildStars() {
@@ -148,7 +177,7 @@ export class Renderer {
       this.scene.remove(this.stars);
       this.stars.geometry.dispose();
     }
-    const count = Math.round(this.W * this.H * 0.022);
+    const count = Math.round(this.W * this.H * 0.03);
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       pos[i * 3] = (Math.random() - 0.5) * this.W;
@@ -157,8 +186,10 @@ export class Renderer {
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    // One physical pixel per star, even on Retina screens.
-    this.stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: false }));
+    // One CSS pixel per star (two physical pixels on Retina), so black rocks
+    // read as holes in the starfield.
+    const size = Math.max(1, Math.round(this.renderer.getPixelRatio()));
+    this.stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size, sizeAttenuation: false }));
     this.scene.add(this.stars);
   }
 
