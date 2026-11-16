@@ -86,7 +86,7 @@ Synthesized with WebAudio, no files. Everything runs through a reverb send and a
 - Alien and ship explosions layer a crack, a filtered body, a debris rattle, a 25–60 Hz sub boom, and a driven thud. Bass management routes the sub content to a subwoofer (a browser can't address the LFE channel directly).
 - Alien deaths add a metallic ring; the player's death adds a falling driven saw, a long rumble, and a sub tail.
 - Shots carry a low kick; hyperspace is a rising sweep with a whoosh; each wave opens with a slow low swell.
-- Background (Charlie asked for something haunting that speeds up as rocks thin, U): a low drone (a fifth plus filtered saws) whose filter opens and wobbles faster as the wave clears, a thin high whistle near the end of a wave, and a pulse that walks a four-note figure (E, E, G, F#) and speeds up from 1.0 s to 0.28 s.
+- Background (Charlie asked for something haunting that speeds up as rocks thin, U): a low drone (a fifth plus filtered saws) whose filter opens and wobbles faster as the wave clears, and a pulse that walks a four-note figure (E, E, G, F#) and speeds up from 1.0 s to 0.28 s. The high whistle that once came in near the end of a wave is gone (Charlie asked for the continuous high tone to go, decided-by-user 2026-11-16).
 - Also thrust (noise plus a sub rumble), a Skiff hum, a Hunter whine, mine beeps, and an extra-life chime.
 
 ## Stack

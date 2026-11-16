@@ -63,8 +63,7 @@ export class Sound {
     this.buildDrone();
   }
 
-  // The haunting bed under play: a low fifth plus a slow-filtered saw, and a
-  // thin high whistle that only surfaces as the wave nears its end.
+  // The haunting bed under play: a low fifth plus a slow-filtered saw.
   buildDrone() {
     const ctx = this.ctx;
     const out = ctx.createGain();
@@ -91,19 +90,7 @@ export class Sound {
       o.connect(g).connect(filter);
       o.start();
     }
-    const whistle = ctx.createOscillator();
-    whistle.frequency.value = 1318.5;
-    const vib = ctx.createOscillator();
-    vib.frequency.value = 0.3;
-    const vibDepth = ctx.createGain();
-    vibDepth.gain.value = 9;
-    vib.connect(vibDepth).connect(whistle.frequency);
-    const whistleGain = ctx.createGain();
-    whistleGain.gain.value = 0;
-    whistle.connect(whistleGain).connect(this.bus);
-    whistle.start();
-    vib.start();
-    this.droneParts = { out, filter, lfo, lfoDepth, whistleGain };
+    this.droneParts = { out, filter, lfo, lfoDepth };
   }
 
   drone(on) {
@@ -121,7 +108,6 @@ export class Sound {
     d.filter.frequency.setTargetAtTime(220 + t * 700, now, 0.5);
     d.lfo.frequency.setTargetAtTime(0.08 + t * 0.7, now, 0.5);
     d.lfoDepth.gain.setTargetAtTime(120 + t * 300, now, 0.5);
-    d.whistleGain.gain.setTargetAtTime(Math.max(0, t - 0.5) * 0.03, now, 0.8);
   }
 
   impulse(seconds, decay) {
@@ -203,7 +189,6 @@ export class Sound {
     this.skiff(false);
     this.hunter(false);
     this.drone(false);
-    if (this.droneParts) this.setLevel(this.droneParts.whistleGain, 0, 0.3);
   }
 
   // A pitched voice with an exponential sweep and decay. `out` defaults to the bus.
