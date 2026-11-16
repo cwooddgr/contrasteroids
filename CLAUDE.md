@@ -16,7 +16,8 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 - In Hard, ships light themselves and take no shadows: ours is pure white (`SELF_LIT`), and the aliens are shaded from a fixed key direction in the shader (`shipKey`). Every light exists in both modes at intensity 0 when unused, so light counts never change; switching modes only recompiles for shadow casting.
 - The HUD is a 2D canvas kept pure black and white by the post pass, and it is uploaded only when its content key changes (`Game.drawHud`).
 - `index.html` links `/assets/a11y.css` and `/assets/a11y.js` from dgrlabs.co; they 404 harmlessly in dev.
-- `docs/banner.jpg` and `dgrlabs_co/assets/contrasteroids.jpg` are the title screen read straight from the canvas (`toDataURL` right after `__game.r.render()`); regenerate them if the look changes.
+- `docs/banner.jpg` and `dgrlabs_co/assets/contrasteroids.jpg` are the Easy title screen read straight from the canvas (`toDataURL` right after `__game.r.render()`, at 800x431@2x and 600x600@1x); regenerate them if the look or font changes. The Hard title is too dark to work as a thumbnail.
+- All text is Audiowide, bundled from `@fontsource/audiowide`. The HUD canvas redraws once the font loads (`main.js`); captures should wait for `document.fonts.ready`.
 - `public/og.png` is the 1200x630 link-preview card, captured from the canvas with a title-and-URL HUD by `docs/og-capture.mjs`; regenerate it with them.
 - Public text (README, site card, in-game copy) follows the workspace no-AI-tells rule.
 - iOS touch quirks in `src/touch.js` (see `docs/decisions.md`): the overlay cancels touchstart/touchmove/touchend because Safari double-tap zooms despite `touch-action: none` (WebKit bug 218015), and audio unlocks on pointerup/touchend, never pointerdown. `src/audio.js` sets the audio session to playback so the silent switch doesn't mute it.
@@ -24,4 +25,4 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 
 ## Status
 
-2026-11-16: Easy (the original sun look) and Hard (ship lights) modes built locally, not yet published; the live site still has the single sun version. Banner, og.png, and README still describe only the sun look.
+2026-11-16: Easy and Hard modes, twinkling stars, sparkly shots, and the Audiowide font are live at https://dgrlabs.co/contrasteroids/. The banner, site card, and og.png show the Easy title screen.

@@ -39,3 +39,18 @@
 > **Status:** decided-by-user
 
 - Charlie confirmed on his iPhone that touch controls work, sound plays, and double-tap no longer zooms ("works now, sound too").
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-16
+> **Status:** decided-by-user
+
+- Charlie asked to replace the monospace font with something "more evocative of the 1980's" and chose Audiowide from six samples (Press Start 2P, Orbitron, Audiowide, VT323, Michroma, Silkscreen).
+- Charlie said to publish the Easy/Hard version.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-16
+> **Status:** proposed-by-agent
+
+- I bundled Audiowide through npm (`@fontsource/audiowide`, OFL) instead of linking Google Fonts, so the page makes no third-party font requests.
+- I used the Easy title screen for the README banner, site card image, and og.png. The Hard title is mostly black and reads poorly at thumbnail size.
+- I rewrote the README intro, controls, and "How it's made" for the two modes. Charlie hasn't reviewed the wording. I left his site card text alone; it doesn't describe the lighting.
