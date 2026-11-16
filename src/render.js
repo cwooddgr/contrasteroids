@@ -276,14 +276,15 @@ export class Renderer {
     }
     // Twinkle, like the sparkle setting on a string of Christmas lights: each
     // star rests at its own brightness and now and then flares briefly to
-    // full white, on its own rhythm. Easy is strict 1-bit, so there a flare
-    // swells the star from one pixel to three instead of brightening it.
+    // full white, on its own rhythm, swelling a pixel as it does. Easy is
+    // strict 1-bit, so there a flare swells the star from one pixel to four
+    // instead of brightening it.
     const base = new Float32Array(count);
     const rate = new Float32Array(count);
     const phase = new Float32Array(count);
     for (let i = 0; i < count; i++) {
-      base[i] = hard ? 0.65 + Math.random() * 0.3 : 1;
-      rate[i] = 0.4 + Math.random() * 1.2;
+      base[i] = hard ? 0.4 + Math.random() * 0.35 : 1;
+      rate[i] = 0.6 + Math.random() * 1.4;
       phase[i] = Math.random() * 100;
     }
     const g = new THREE.BufferGeometry();
@@ -296,7 +297,7 @@ export class Renderer {
     const size = hard ? Math.max(1, Math.round(this.renderer.getPixelRatio())) : 1;
     this.starTime = this.starTime || { value: 0 };
     this.stars = new THREE.Points(g, new THREE.ShaderMaterial({
-      uniforms: { uTime: this.starTime, uSize: { value: size }, uGrow: { value: hard ? 0 : 2 } },
+      uniforms: { uTime: this.starTime, uSize: { value: size }, uGrow: { value: hard ? 1 : 3 } },
       vertexShader: /* glsl */ `
         attribute float aBase;
         attribute float aRate;
@@ -307,7 +308,7 @@ export class Renderer {
         varying float vB;
         void main() {
           // A sharp peak once per cycle; most of the cycle sits at the base level.
-          float flare = pow(max(0.0, sin(uTime * aRate + aPhase)), 40.0);
+          float flare = pow(max(0.0, sin(uTime * aRate + aPhase)), 16.0);
           vB = mix(aBase, 1.0, flare);
           gl_PointSize = uSize + floor(uGrow * flare + 0.5);
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);

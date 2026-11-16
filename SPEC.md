@@ -15,7 +15,7 @@ Space has no atmosphere, so there is no fill light. Anything not lit directly is
 > **Status:** decided-by-user for the choices marked (U); proposed-by-agent for everything else
 
 - Two modes (U): **Easy** is the original sun-lit game and **Hard** is the ship-light game below.
-- Easy keeps the sun-lit ships with shadows and the original star density. Charlie then asked for Hard's twinkling stars and slower sparkly shots in Easy too (U). Shots are 55 units/s with sparkle in both modes. Easy is strict 1-bit, so I made its stars twinkle by swelling from one pixel to three at a flare instead of brightening (proposed). Bullet lights, glows, and self-lit ships stay Hard only.
+- Easy keeps the sun-lit ships with shadows and the original star density. Charlie then asked for Hard's twinkling stars and slower sparkly shots in Easy too (U). Shots are 55 units/s with sparkle in both modes. Easy is strict 1-bit, so I made its stars twinkle by swelling from one pixel to four at a flare instead of brightening (proposed). Charlie found the first twinkle much too subtle (U), so flares are now longer and more frequent in both modes, and Hard stars rest dimmer (40–75%) and swell a pixel as they flare. Bullet lights, glows, and self-lit ships stay Hard only.
 - The title and game-over screens show EASY and HARD. On a keyboard, Left/Right choose (the scene switches lighting at once, as a preview) and Enter starts. On touch, tapping the left half starts Easy and the right half Hard. The last choice is remembered. Not confirmed.
 - Each mode keeps its own high score; Easy keeps the old one. The HUD shows the mode beside the high score. Not confirmed.
 
