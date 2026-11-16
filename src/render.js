@@ -276,7 +276,8 @@ export class Renderer {
     }
     // Twinkle, like the sparkle setting on a string of Christmas lights: each
     // star rests at its own brightness and now and then flares briefly to
-    // full white, on its own rhythm.
+    // full white, on its own rhythm. Easy is strict 1-bit, so there a flare
+    // swells the star from one pixel to three instead of brightening it.
     const base = new Float32Array(count);
     const rate = new Float32Array(count);
     const phase = new Float32Array(count);
@@ -295,19 +296,20 @@ export class Renderer {
     const size = hard ? Math.max(1, Math.round(this.renderer.getPixelRatio())) : 1;
     this.starTime = this.starTime || { value: 0 };
     this.stars = new THREE.Points(g, new THREE.ShaderMaterial({
-      uniforms: { uTime: this.starTime, uSize: { value: size } },
+      uniforms: { uTime: this.starTime, uSize: { value: size }, uGrow: { value: hard ? 0 : 2 } },
       vertexShader: /* glsl */ `
         attribute float aBase;
         attribute float aRate;
         attribute float aPhase;
         uniform float uTime;
         uniform float uSize;
+        uniform float uGrow;
         varying float vB;
         void main() {
           // A sharp peak once per cycle; most of the cycle sits at the base level.
-          float flare = aBase < 1.0 ? pow(max(0.0, sin(uTime * aRate + aPhase)), 40.0) : 0.0;
+          float flare = pow(max(0.0, sin(uTime * aRate + aPhase)), 40.0);
           vB = mix(aBase, 1.0, flare);
-          gl_PointSize = uSize;
+          gl_PointSize = uSize + floor(uGrow * flare + 0.5);
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }`,
       fragmentShader: /* glsl */ `

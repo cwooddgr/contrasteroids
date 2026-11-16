@@ -15,7 +15,7 @@ Space has no atmosphere, so there is no fill light. Anything not lit directly is
 > **Status:** decided-by-user for the choices marked (U); proposed-by-agent for everything else
 
 - Two modes (U): **Easy** is the original sun-lit game and **Hard** is the ship-light game below.
-- I took "the previous mode" to mean everything from before the ship light, so Easy also keeps the sun-lit ships with shadows, the original fast plain shots (85 units/s), and the plain one-physical-pixel stars. Twinkle, sparkle, glows, and self-lit ships are Hard only. Not confirmed.
+- Easy keeps the sun-lit ships with shadows and the original star density. Charlie then asked for Hard's twinkling stars and slower sparkly shots in Easy too (U). Shots are 55 units/s with sparkle in both modes. Easy is strict 1-bit, so I made its stars twinkle by swelling from one pixel to three at a flare instead of brightening (proposed). Bullet lights, glows, and self-lit ships stay Hard only.
 - The title and game-over screens show EASY and HARD. On a keyboard, Left/Right choose (the scene switches lighting at once, as a preview) and Enter starts. On touch, tapping the left half starts Easy and the right half Hard. The last choice is remembered. Not confirmed.
 - Each mode keeps its own high score; Easy keeps the old one. The HUD shows the mode beside the high score. Not confirmed.
 
@@ -23,7 +23,7 @@ Space has no atmosphere, so there is no fill light. Anything not lit directly is
 
 - Strict 1-bit output (U). Every pixel is pure black or white.
 - One directional light from the upper-left of the screen at 15° elevation (U; first 45°, lowered, see git history). No ambient light. Hard shadow maps; objects self-shadow and shadow each other.
-- Dark sides are not helped in any way (U). Sparse starfield, one physical pixel per star (U).
+- Dark sides are not helped in any way (U). Sparse starfield, one physical pixel per star (U), twinkling by size (see Modes).
 - Dev keys: J/L sun azimuth, I/K elevation.
 
 ## Hard: look

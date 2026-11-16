@@ -17,9 +17,10 @@ const TURN = 4.6;
 const THRUST = 55;
 const DRAG = 0.55;
 const MAX_SPEED = 65;
-// Hard mode's shots are slower (and sparkle); life is longer so range drops
-// only from 81 to 71.
-const BULLET = { easy: { speed: 85, life: 0.95 }, hard: { speed: 55, life: 1.3 } };
+// Shots are slow and sparkle in both modes; life is longer than the original
+// 0.95 s at 85 so range drops only from 81 to 71.
+const BULLET_SPEED = 55;
+const BULLET_LIFE = 1.3;
 const MAX_BULLETS = 5;
 const FIRE_COOLDOWN = 0.16;
 const EXTRA_LIFE = 10000;
@@ -344,7 +345,7 @@ export class Game {
       p.fireCooldown = FIRE_COOLDOWN;
       const c = Math.cos(p.angle), s = Math.sin(p.angle);
       this.fire(this.bullets, BULLET_GEOM, p.x + c * 2.4, p.y + s * 2.4,
-        c * BULLET[this.difficulty].speed + p.vx, s * BULLET[this.difficulty].speed + p.vy, BULLET[this.difficulty].life);
+        c * BULLET_SPEED + p.vx, s * BULLET_SPEED + p.vy, BULLET_LIFE);
       this.sound.shot();
     }
 
@@ -374,7 +375,7 @@ export class Game {
   }
 
   updateBullets(list, dt) {
-    const sparkle = list === this.bullets && this.difficulty === 'hard';
+    const sparkle = list === this.bullets;
     for (let i = list.length - 1; i >= 0; i--) {
       const b = list[i];
       b.life -= dt;
