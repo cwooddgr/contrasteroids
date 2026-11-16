@@ -20,8 +20,8 @@ function binaryLambert(material) {
   return material;
 }
 
-// Alien ships light themselves, glow, and light their surroundings like ours
-// (see Renderer.alienLightsFor). They are shaded by a fixed key light from the upper-left, low over the plane
+// Hard mode: alien ships light themselves, glow, and light their surroundings
+// like ours (see Renderer.alienLightsFor). They are shaded by a fixed key light from the upper-left, low over the plane
 // (the old sun angle), binary like everything else. The camera looks straight
 // down with no roll, so view space has the same axes as world space.
 function shipKey(material) {
@@ -146,11 +146,20 @@ function finish(obj) {
   return obj;
 }
 
-// Ships light themselves (Charlie's call): no shadows cast or received.
-function selfShaded(obj) {
+// Ships are built with the sun-lit materials (easy mode). In hard mode they
+// light themselves (Charlie's call): no shadows cast or received, a glow
+// underneath, our ship pure white and the aliens shaded by a fixed key light.
+export function styleShip(obj, mode) {
+  const hard = mode === 'hard';
+  const player = obj.userData.player;
   obj.traverse((o) => {
-    if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; }
+    if (!o.isMesh || o.material === SELF_LIT && !o.userData.base) return;
+    o.userData.base ??= o.material;
+    const base = o.userData.base;
+    o.material = !hard ? base : player ? SELF_LIT : base === WHITE_FLAT ? SHIP_FLAT : SHIP_SMOOTH;
+    o.castShadow = o.receiveShadow = !hard;
   });
+  obj.userData.glow.visible = hard;
   return obj;
 }
 
@@ -181,7 +190,9 @@ export function makeGlow(radius, strength) {
 }
 
 // --- the player ship, pointing along +x ---
-// Always fully lit, pure white (Charlie's call), so it reads as a silhouette.
+// Easy: a sharp center ridge with steep flanks; under the sun one flank is lit
+// and the other black, and they swap as the ship turns. The fin and engine
+// pods cast shadows on the hull. Hard: pure white (see styleShip).
 export function makeShip() {
   const group = new THREE.Group();
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -194,14 +205,14 @@ export function makeShip() {
     V(0.9, 0.55, 0.05), V(0.9, -0.55, 0.05), // forward chines
     V(0.2, 0, -0.45), V(-1.2, 0, -0.35), // keel
   ]);
-  group.add(new THREE.Mesh(hull, SELF_LIT));
+  group.add(new THREE.Mesh(hull, WHITE_FLAT));
 
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.8), SELF_LIT);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.8), WHITE_FLAT);
   fin.position.set(-0.95, 0, 1.15);
   fin.rotation.y = -0.35;
   group.add(fin);
 
-  const canopy = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), SELF_LIT);
+  const canopy = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), WHITE_FLAT);
   canopy.scale.set(0.75, 0.28, 0.32);
   canopy.position.set(0.85, 0, 0.82);
   canopy.rotation.y = 0.45;
@@ -210,7 +221,7 @@ export function makeShip() {
   const flame = new THREE.Group();
   flame.position.set(-1.55, 0, 0.15);
   for (const y of [-0.85, 0.85]) {
-    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.2, 16), SELF_LIT);
+    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.2, 16), WHITE_SMOOTH);
     pod.rotation.z = Math.PI / 2;
     pod.position.set(-1.1, y, 0.2);
     group.add(pod);
@@ -222,26 +233,25 @@ export function makeShip() {
   flame.visible = false;
   group.add(flame);
   group.userData.flame = flame;
-  const glow = makeGlow(7, 0.5);
-  group.add(glow);
-  group.userData.glow = glow;
-  // The ship's lights sit inside it; it must not shadow them.
-  return selfShaded(group);
+  group.userData.glow = makeGlow(7, 0.5);
+  group.add(group.userData.glow);
+  group.userData.player = true;
+  return finish(group);
 }
 
 // --- Skiff: a spindle with fins, long axis along x ---
 export function makeSkiff() {
   const group = new THREE.Group();
   const spin = new THREE.Group();
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), SHIP_FLAT);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), WHITE_FLAT);
   nose.rotation.z = -Math.PI / 2;
   nose.position.x = 1.2;
-  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), SHIP_FLAT);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.4, 10), WHITE_FLAT);
   tail.rotation.z = Math.PI / 2;
   tail.position.x = -1.2;
   spin.add(nose, tail);
   for (let i = 0; i < 3; i++) {
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.5), SHIP_FLAT);
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.5), WHITE_FLAT);
     const holder = new THREE.Group();
     fin.position.set(-1.0, 0, 0.9);
     holder.add(fin);
@@ -250,18 +260,19 @@ export function makeSkiff() {
   }
   group.add(spin);
   group.userData.spin = spin;
-  group.add(makeGlow(7, 0.5));
-  return selfShaded(group);
+  group.userData.glow = makeGlow(7, 0.5);
+  group.add(group.userData.glow);
+  return finish(group);
 }
 
 // --- Layer: a ring with a hub and spokes ---
 export function makeLayer() {
   const group = new THREE.Group();
   const spin = new THREE.Group();
-  spin.add(new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.55, 14, 40), SHIP_SMOOTH));
-  spin.add(new THREE.Mesh(new THREE.SphereGeometry(1.1, 20, 14), SHIP_SMOOTH));
+  spin.add(new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.55, 14, 40), WHITE_SMOOTH));
+  spin.add(new THREE.Mesh(new THREE.SphereGeometry(1.1, 20, 14), WHITE_SMOOTH));
   for (let i = 0; i < 3; i++) {
-    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.5, 8), SHIP_SMOOTH);
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.5, 8), WHITE_SMOOTH);
     spoke.position.y = 1.25;
     const holder = new THREE.Group();
     holder.add(spoke);
@@ -271,24 +282,26 @@ export function makeLayer() {
   spin.rotation.x = 0.9;
   group.add(spin);
   group.userData.spin = spin;
-  group.add(makeGlow(7, 0.5));
-  return selfShaded(group);
+  group.userData.glow = makeGlow(7, 0.5);
+  group.add(group.userData.glow);
+  return finish(group);
 }
 
 // --- Hunter: a sharp stretched double pyramid pointing along +x ---
 export function makeHunter() {
   const group = new THREE.Group();
   const spin = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), SHIP_FLAT);
+  const body = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), WHITE_FLAT);
   body.scale.set(2.4, 0.95, 0.95);
   spin.add(body);
-  const collar = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.16, 6, 4), SHIP_FLAT);
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.16, 6, 4), WHITE_FLAT);
   collar.rotation.y = Math.PI / 2;
   spin.add(collar);
   group.add(spin);
   group.userData.spin = spin;
-  group.add(makeGlow(7, 0.5));
-  return selfShaded(group);
+  group.userData.glow = makeGlow(7, 0.5);
+  group.add(group.userData.glow);
+  return finish(group);
 }
 
 // --- Mine: a spiked ball with a self-lit blinker ---

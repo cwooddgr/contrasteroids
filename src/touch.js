@@ -93,8 +93,12 @@ export class Touch {
     if (e.type === 'pointerup' || e.type === 'pointercancel') {
       const was = this.pointers.get(id);
       this.pointers.delete(id);
-      // A tap on open screen starts the game, or resumes it from pause.
-      if (e.type === 'pointerup' && was === null) this.input.tap('Tap');
+      // A tap on open screen starts the game (the left half Easy, the right
+      // half Hard), or resumes it from pause.
+      if (e.type === 'pointerup' && was === null) {
+        this.input.tapX = e.clientX / window.innerWidth; // which side: Easy or Hard on the title
+        this.input.tap('Tap');
+      }
     } else {
       if (e.type === 'pointermove' && !this.pointers.has(id)) return;
       // Sliding a thumb from one button to the next switches between them.

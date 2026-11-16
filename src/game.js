@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {
   makeRockMesh, makeShip, makeSkiff, makeLayer, makeHunter, makeMine,
-  DEBRIS_GEOMS, WHITE_SMOOTH, SELF_LIT, BULLET_GEOM, ENEMY_BULLET_GEOM,
+  DEBRIS_GEOMS, WHITE_SMOOTH, SELF_LIT, BULLET_GEOM, ENEMY_BULLET_GEOM, styleShip,
 } from './geometry.js';
 
 const ROCK = {
@@ -17,12 +17,15 @@ const TURN = 4.6;
 const THRUST = 55;
 const DRAG = 0.55;
 const MAX_SPEED = 65;
-const BULLET_SPEED = 55;
-const BULLET_LIFE = 1.3;
+// Hard mode's shots are slower (and sparkle); life is longer so range drops
+// only from 81 to 71.
+const BULLET = { easy: { speed: 85, life: 0.95 }, hard: { speed: 55, life: 1.3 } };
 const MAX_BULLETS = 5;
 const FIRE_COOLDOWN = 0.16;
 const EXTRA_LIFE = 10000;
-const HI_KEY = 'contrasteroids.hi';
+// Easy keeps the original key, so high scores from before modes carry over.
+const HI_KEYS = { easy: 'contrasteroids.hi', hard: 'contrasteroids.hi.hard' };
+const DIFFICULTY_KEY = 'contrasteroids.difficulty';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -47,8 +50,12 @@ export class Game {
     this.debris = [];
     this.sparks = [];
 
-    this.hi = 0;
-    try { this.hi = Number(localStorage.getItem(HI_KEY)) || 0; } catch { /* storage unavailable */ }
+    this.his = { easy: 0, hard: 0 };
+    this.difficulty = 'easy';
+    try {
+      for (const d of ['easy', 'hard']) this.his[d] = Number(localStorage.getItem(HI_KEYS[d])) || 0;
+      if (localStorage.getItem(DIFFICULTY_KEY) === 'hard') this.difficulty = 'hard';
+    } catch { /* storage unavailable */ }
 
     this.ship = makeShip();
     this.ship.rotation.order = 'ZYX'; // roll about the ship's own axis, then yaw
@@ -70,7 +77,19 @@ export class Game {
     this.mode = 'title';
     this.time = 0;
     this.hudKey = '';
+    this.setDifficulty(this.difficulty);
     this.attract();
+  }
+
+  get hi() { return this.his[this.difficulty]; }
+
+  // Easy: the sun, strict 1-bit. Hard: light only from ships, shots, and blasts.
+  setDifficulty(d) {
+    this.difficulty = d;
+    this.r.setMode(d);
+    styleShip(this.ship, d);
+    for (const a of this.aliens) styleShip(a.mesh, d);
+    try { localStorage.setItem(DIFFICULTY_KEY, d); } catch { /* storage unavailable */ }
   }
 
   // ---------- setup ----------
@@ -187,9 +206,19 @@ export class Game {
       this.updateMines(dt);
       this.collide();
       this.updateWave(dt);
-    } else if (inp.pressed('Enter', 'NumpadEnter', 'Tap')) {
-      this.start();
-      return;
+    } else {
+      // Title and game over: Left/Right choose the mode, Enter starts. On
+      // touch, tapping the left or right half starts Easy or Hard.
+      if (inp.pressed('ArrowLeft', 'KeyA') && this.difficulty !== 'easy') this.setDifficulty('easy');
+      if (inp.pressed('ArrowRight', 'KeyD') && this.difficulty !== 'hard') this.setDifficulty('hard');
+      if (inp.pressed('Tap')) {
+        const d = (inp.tapX ?? 0.5) < 0.5 ? 'easy' : 'hard';
+        if (d !== this.difficulty) this.setDifficulty(d);
+      }
+      if (inp.pressed('Enter', 'NumpadEnter', 'Tap')) {
+        this.start();
+        return;
+      }
     }
 
     this.updateRocks(dt);
@@ -210,28 +239,37 @@ export class Game {
     }
   }
 
-  // Dev keys: J/L cone width, I/K spotlight range, U/O halo range.
+  // Dev keys. Easy: J/L turn the sun's azimuth, I/K its elevation.
+  // Hard: J/L cone width, I/K spotlight range, U/O halo range.
   tuneLight(dt) {
     const inp = this.input, r = this.r;
     const adj = (code, d) => (inp.held(code) ? d * dt : 0);
+    if (this.difficulty === 'easy') {
+      const az = adj('KeyJ', 60) - adj('KeyL', 60), el = adj('KeyI', 30) - adj('KeyK', 30);
+      if (!az && !el) return;
+      r.lightAzimuth = (r.lightAzimuth + az + 360) % 360;
+      r.lightElevation = THREE.MathUtils.clamp(r.lightElevation + el, -30, 89);
+      r.updateSun();
+      return;
+    }
     r.coneDeg = THREE.MathUtils.clamp(r.coneDeg + adj('KeyL', 30) - adj('KeyJ', 30), 10, 180);
     r.spotRange = THREE.MathUtils.clamp(r.spotRange + adj('KeyI', 30) - adj('KeyK', 30), 10, 250);
     r.haloRange = THREE.MathUtils.clamp(r.haloRange + adj('KeyO', 15) - adj('KeyU', 15), 0, 80);
     r.applyLightTuning();
   }
 
-  // The lights live on the ship. On the title screen a parked ship slowly
-  // turns so its beam sweeps the rocks.
+  // Hard mode's lights live on the ship. On the hard title screen a parked
+  // ship slowly turns so its beam sweeps the rocks.
   updateLights(dt) {
     const p = this.player;
-    if (this.mode === 'title') {
+    if (this.mode === 'title' && this.difficulty === 'hard') {
       p.angle += dt * 0.35;
       this.ship.visible = true;
       this.ship.userData.flame.visible = false;
-      // Parked in the gap between PRESS ENTER and the controls list.
-      this.ship.position.set(0, -5, 0);
+      // Parked in the gap between the mode choice and the controls list.
+      this.ship.position.set(0, -8, 0);
       this.ship.rotation.set(0, 0, p.angle);
-      this.r.shipLights(0, -5, p.angle, true);
+      this.r.shipLights(0, -8, p.angle, true);
     } else {
       const on = this.mode === 'play' && p.alive && p.hyper <= 0;
       if (this.mode !== 'play') this.ship.visible = false;
@@ -306,7 +344,7 @@ export class Game {
       p.fireCooldown = FIRE_COOLDOWN;
       const c = Math.cos(p.angle), s = Math.sin(p.angle);
       this.fire(this.bullets, BULLET_GEOM, p.x + c * 2.4, p.y + s * 2.4,
-        c * BULLET_SPEED + p.vx, s * BULLET_SPEED + p.vy, BULLET_LIFE);
+        c * BULLET[this.difficulty].speed + p.vx, s * BULLET[this.difficulty].speed + p.vy, BULLET[this.difficulty].life);
       this.sound.shot();
     }
 
@@ -336,7 +374,7 @@ export class Game {
   }
 
   updateBullets(list, dt) {
-    const sparkle = list === this.bullets;
+    const sparkle = list === this.bullets && this.difficulty === 'hard';
     for (let i = list.length - 1; i >= 0; i--) {
       const b = list[i];
       b.life -= dt;
@@ -423,7 +461,7 @@ export class Game {
       const dir = Math.random() < 0.5 ? 1 : -1;
       const baseY = rand(-H * 0.35, H * 0.35);
       a = {
-        type, mesh: makeSkiff(), dir, baseY, x: -dir * (W / 2 + 4), y: baseY, r: 2.3,
+        type, mesh: styleShip(makeSkiff(), this.difficulty), dir, baseY, x: -dir * (W / 2 + 4), y: baseY, r: 2.3,
         vx: dir * Math.min(16 + wave * 1.2, 30), amp: rand(5, 13), freq: rand(1.4, 2.4),
         fireTimer: rand(0.8, 1.4),
       };
@@ -431,7 +469,7 @@ export class Game {
     } else if (type === 'layer') {
       const dir = Math.random() < 0.5 ? 1 : -1;
       a = {
-        type, mesh: makeLayer(), dir, x: rand(-W * 0.4, W * 0.4), y: -dir * (H / 2 + 4), r: 3.1,
+        type, mesh: styleShip(makeLayer(), this.difficulty), dir, x: rand(-W * 0.4, W * 0.4), y: -dir * (H / 2 + 4), r: 3.1,
         vx: rand(-3, 3), vy: dir * Math.min(5 + wave * 0.3, 10), mineTimer: rand(1.5, 2.5),
       };
     } else {
@@ -439,7 +477,7 @@ export class Game {
       const x = edge < 2 ? (edge === 0 ? -1 : 1) * (W / 2 + 3) : rand(-W / 2, W / 2);
       const y = edge >= 2 ? (edge === 2 ? -1 : 1) * (H / 2 + 3) : rand(-H / 2, H / 2);
       a = {
-        type, mesh: makeHunter(), x, y, r: 1.9,
+        type, mesh: styleShip(makeHunter(), this.difficulty), x, y, r: 1.9,
         heading: Math.atan2(this.player.y - y, this.player.x - x),
         speed: Math.min(19 + wave * 0.8, 32),
       };
@@ -678,8 +716,8 @@ export class Game {
         this.mode = 'gameover';
         this.sound.silenceLoops();
         if (this.score > this.hi) {
-          this.hi = this.score;
-          try { localStorage.setItem(HI_KEY, String(this.hi)); } catch { /* storage unavailable */ }
+          this.his[this.difficulty] = this.score;
+          try { localStorage.setItem(HI_KEYS[this.difficulty], String(this.score)); } catch { /* storage unavailable */ }
         }
       }
       return;
@@ -776,8 +814,8 @@ export class Game {
   drawHud() {
     const blinkOn = Math.floor(this.time * 2) % 2 === 0;
     const key = [
-      this.mode, this.score, this.hi, this.lives, this.paused,
-      this.dev && [this.r.coneDeg, this.r.spotRange, this.r.haloRange].map(Math.round).join(), this.bannerTimer > 0 && this.banner, blinkOn, this.touch,
+      this.mode, this.difficulty, this.score, this.hi, this.lives, this.paused,
+      this.dev && [this.r.coneDeg, this.r.spotRange, this.r.haloRange, this.r.lightAzimuth, this.r.lightElevation].map(Math.round).join(), this.bannerTimer > 0 && this.banner, blinkOn, this.touch,
     ].join('|');
     if (key === this.hudKey && !this.r.hudDirty) return;
     this.hudKey = key;
@@ -803,11 +841,21 @@ export class Game {
       }
       c.fillText(s, x, y);
     };
-    const go = this.touch ? 'TAP TO START' : 'PRESS ENTER';
+    const go = this.touch ? 'TAP A SIDE TO START' : 'LEFT / RIGHT TO CHOOSE   ENTER TO START';
+    // The mode choice: the chosen one is bracketed (keyboard only; on touch,
+    // tapping a side picks it).
+    const choice = (y) => {
+      for (const [d, x] of [['easy', 0.4], ['hard', 0.6]]) {
+        const label = d.toUpperCase();
+        text(!this.touch && d === this.difficulty ? `[ ${label} ]` : label, w * x, y, k * 3.6, 'center', k * 0.5);
+      }
+    };
+    const D = this.difficulty.toUpperCase();
 
     if (this.mode === 'title') {
       text('CONTRASTEROIDS', w / 2, h * 0.3, k * 8, 'center', k * 1.2);
-      if (blinkOn) text(go, w / 2, h * 0.47, k * 3.6, 'center', k * 0.5);
+      choice(h * 0.44);
+      if (blinkOn) text(go, w / 2, h * 0.5, k * 2.4, 'center', k * 0.3);
       const lines = this.touch ? [
         'LEFT THUMB  ROTATE',
         'RIGHT THUMB  THRUST  FIRE',
@@ -819,14 +867,15 @@ export class Game {
         'P  PAUSE      M  MUTE',
       ];
       lines.forEach((l, i) => text(l, w / 2, h * 0.62 + i * k * 4, k * 2.4, 'center'));
-      if (this.hi) text(`HIGH SCORE ${this.hi}`, w / 2, h * 0.86, k * 2.6, 'center');
+      if (this.hi) text(`${D} HIGH SCORE ${this.hi}`, w / 2, h * 0.86, k * 2.6, 'center');
     } else {
       text(String(this.score), k * 3, k * 2.5, k * 4.2);
-      text(`HI ${this.hi}`, w / 2, k * 2.5, k * 2.4, 'center');
+      text(`${D}  HI ${this.hi}`, w / 2, k * 2.5, k * 2.4, 'center');
       for (let i = 0; i < Math.min(this.lives, 10); i++) this.lifeIcon(c, k * (4 + i * 3.4), k * 9.5, k * 1.2);
       if (this.mode === 'gameover') {
         text('GAME OVER', w / 2, h * 0.4, k * 7, 'center', k);
-        if (blinkOn) text(go, w / 2, h * 0.55, k * 3.2, 'center', k * 0.5);
+        choice(h * 0.53);
+        if (blinkOn) text(go, w / 2, h * 0.59, k * 2.4, 'center', k * 0.3);
       } else if (this.paused) {
         text('PAUSED', w / 2, h * 0.45, k * 6, 'center', k);
         if (this.touch) text('TAP TO RESUME', w / 2, h * 0.55, k * 3, 'center', k * 0.5);
@@ -835,8 +884,11 @@ export class Game {
       }
     }
     if (this.dev) {
-      text(`CONE ${Math.round(this.r.coneDeg)}  RANGE ${Math.round(this.r.spotRange)}  HALO ${Math.round(this.r.haloRange)}  (J/L I/K U/O)`,
-        k * 3, h - k * 5, k * 2.2);
+      const r = this.r;
+      text(this.difficulty === 'easy'
+        ? `SUN AZ ${Math.round(r.lightAzimuth)}  EL ${Math.round(r.lightElevation)}  (J/L I/K)`
+        : `CONE ${Math.round(r.coneDeg)}  RANGE ${Math.round(r.spotRange)}  HALO ${Math.round(r.haloRange)}  (J/L I/K U/O)`,
+      k * 3, h - k * 5, k * 2.2);
     }
     this.r.hudTexture.needsUpdate = true;
   }

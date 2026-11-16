@@ -8,7 +8,25 @@
 
 Space has no atmosphere, so there is no fill light. Anything not lit directly is pure black, and shadows have razor edges. Contrasteroids is a rock-shooting arcade game built on that idea: solid 3D white objects lit only by the ship's own lamp, its bullets, and explosions. (Until 2026-11-16 the light was one offscreen sun and the picture was strictly 1-bit.) It is inspired by the genre, not a copy of any game: no vector look, no saucers, our own ships and enemies.
 
-## Look
+## Modes
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-16
+> **Status:** decided-by-user for the choices marked (U); proposed-by-agent for everything else
+
+- Two modes (U): **Easy** is the original sun-lit game and **Hard** is the ship-light game below.
+- I took "the previous mode" to mean everything from before the ship light, so Easy also keeps the sun-lit ships with shadows, the original fast plain shots (85 units/s), and the plain one-physical-pixel stars. Twinkle, sparkle, glows, and self-lit ships are Hard only. Not confirmed.
+- The title and game-over screens show EASY and HARD. On a keyboard, Left/Right choose (the scene switches lighting at once, as a preview) and Enter starts. On touch, tapping the left half starts Easy and the right half Hard. The last choice is remembered. Not confirmed.
+- Each mode keeps its own high score; Easy keeps the old one. The HUD shows the mode beside the high score. Not confirmed.
+
+### Easy: look (2026-11-15)
+
+- Strict 1-bit output (U). Every pixel is pure black or white.
+- One directional light from the upper-left of the screen at 15° elevation (U; first 45°, lowered, see git history). No ambient light. Hard shadow maps; objects self-shadow and shadow each other.
+- Dark sides are not helped in any way (U). Sparse starfield, one physical pixel per star (U).
+- Dev keys: J/L sun azimuth, I/K elevation.
+
+## Hard: look
 
 > **Author:** Claude Code (spec writer, from a discussion with Charlie)
 > **Date:** 2026-11-16
@@ -32,12 +50,6 @@ This section replaces the 2026-11-15 sun lighting. Charlie found the game too ea
 - Dev-only tuning (backtick toggles): keys to adjust cone width, halo radius, and falloff range, shown on the HUD. Replaces the sun azimuth and elevation keys.
 
 Implementation (proposed): the rock and alien materials compute lit or unlit per light from surface angle and shadow, then multiply by that light's distance falloff, so the post pass no longer thresholds to 0 or 1. The post pass keeps the HUD at pure black and white. A spotlight shadow is one shadow map; the halo and bullet lights don't cast shadows, to avoid cube-map shadows on phones.
-
-### Superseded (2026-11-15)
-
-- ~~Strict 1-bit output (U). Every pixel on screen is pure black or pure white.~~ Replaced by greyscale distance falloff (U, 2026-11-16).
-- ~~One directional light from the upper-left at 15° elevation.~~ Replaced by the ship's lights (U, 2026-11-16).
-- ~~Sparse white starfield, one physical pixel per star (U).~~ Density under review so black rocks can be seen against it.
 
 ## Objects
 
