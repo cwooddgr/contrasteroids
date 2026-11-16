@@ -64,8 +64,14 @@ export class Touch {
     for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']) {
       el.addEventListener(type, update);
     }
-    // iOS starts audio reliably from touchend, so unlock there too.
-    el.addEventListener('touchend', () => this.onFirstTouch?.(), { passive: true });
+    // Safari ignores touch-action: none on positioned elements for double-tap
+    // zoom (WebKit bug 218015), so cancel the touches themselves. Pointer events
+    // still fire. touchend is also where iOS reliably lets audio start.
+    const stop = (e) => { if (e.cancelable) e.preventDefault(); };
+    el.addEventListener('touchstart', stop, { passive: false });
+    el.addEventListener('touchmove', stop, { passive: false });
+    el.addEventListener('touchend', (e) => { stop(e); this.onFirstTouch?.(); }, { passive: false });
+    el.addEventListener('dblclick', stop);
     el.addEventListener('contextmenu', (e) => e.preventDefault());
 
     // Show the controls on touch-first devices, or as soon as anyone touches the screen.
