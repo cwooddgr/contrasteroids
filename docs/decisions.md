@@ -33,3 +33,9 @@
 - Tested in desktop Chrome with synthetic touch pointer events, not yet on a real phone.
 - Charlie reported no sound on his iPhone. I set `navigator.audioSession.type = 'playback'` so the silent switch doesn't mute the game (Safari treats Web Audio as ambient by default; WebKit bug 237322), and moved the touch audio unlock from pointerdown to pointerup/touchend, since a touch pointerdown isn't a user activation under the HTML spec. Side effect: starting the game pauses other audio such as music. Not yet confirmed on his phone.
 - Charlie double-tapped beside the fire button on iOS Safari and the page zoomed. `touch-action: none` doesn't stop double-tap zoom on positioned elements in Safari (WebKit bug 218015, still open), so the overlay now cancels touchstart, touchmove, and touchend itself. Not yet confirmed on his phone.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-15
+> **Status:** decided-by-user
+
+- Charlie confirmed on his iPhone that touch controls work, sound plays, and double-tap no longer zooms ("works now, sound too").
