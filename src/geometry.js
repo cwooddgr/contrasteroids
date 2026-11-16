@@ -330,6 +330,8 @@ export function makeMine() {
   group.add(blink);
   group.userData.spin = spin;
   group.userData.blink = blink;
+  group.userData.glow = makeGlow(4, 0.4); // Hard only (styleShip)
+  group.add(group.userData.glow);
   return finish(group);
 }
 

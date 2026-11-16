@@ -89,7 +89,7 @@ export class Game {
     this.difficulty = d;
     this.r.setMode(d);
     styleShip(this.ship, d);
-    for (const a of this.aliens) styleShip(a.mesh, d);
+    for (const a of [...this.aliens, ...this.mines]) styleShip(a.mesh, d);
     try { localStorage.setItem(DIFFICULTY_KEY, d); } catch { /* storage unavailable */ }
   }
 
@@ -546,7 +546,8 @@ export class Game {
   }
 
   spawnMine(x, y) {
-    const mesh = makeMine();
+    // Mines are styled like the alien ships: self-lit with a glow in Hard.
+    const mesh = styleShip(makeMine(), this.difficulty);
     mesh.position.set(x, y, 0);
     this.scene.add(mesh);
     this.mines.push({ mesh, x, y, vx: 0, vy: 0, r: 1.2, life: 22, blink: rand(0, 0.6), axis: randomAxis() });
