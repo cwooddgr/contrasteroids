@@ -17,6 +17,7 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 - `index.html` links `/assets/a11y.css` and `/assets/a11y.js` from dgrlabs.co; they 404 harmlessly in dev.
 - `docs/banner.jpg` and `dgrlabs_co/assets/contrasteroids.jpg` are the title screen read straight from the canvas (`toDataURL` right after `__game.r.render()`); regenerate them if the look changes.
 - Public text (README, site card, in-game copy) follows the workspace no-AI-tells rule.
+- iOS touch quirks in `src/touch.js` (see `docs/decisions.md`): the overlay cancels touchstart/touchmove/touchend because Safari double-tap zooms despite `touch-action: none` (WebKit bug 218015), and audio unlocks on pointerup/touchend, never pointerdown. `src/audio.js` sets the audio session to playback so the silent switch doesn't mute it.
 - Backtick toggles dev mode: J/L turn the sun's azimuth, I/K its elevation.
 
 ## Status
