@@ -284,7 +284,7 @@ export class Renderer {
     const phase = new Float32Array(count);
     for (let i = 0; i < count; i++) {
       base[i] = hard ? 0.4 + Math.random() * 0.35 : 1;
-      rate[i] = 0.6 + Math.random() * 1.4;
+      rate[i] = 0.25 + Math.random() * 0.45;
       phase[i] = Math.random() * 100;
     }
     const g = new THREE.BufferGeometry();
@@ -308,7 +308,7 @@ export class Renderer {
         varying float vB;
         void main() {
           // A sharp peak once per cycle; most of the cycle sits at the base level.
-          float flare = pow(max(0.0, sin(uTime * aRate + aPhase)), 16.0);
+          float flare = pow(max(0.0, sin(uTime * aRate + aPhase)), 60.0);
           vB = mix(aBase, 1.0, flare);
           gl_PointSize = uSize + floor(uGrow * flare + 0.5);
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
