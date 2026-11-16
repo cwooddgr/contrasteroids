@@ -82,7 +82,7 @@ export class Touch {
   onPointer(e) {
     if (e.pointerType === 'mouse' && !this.enabled) return;
     e.preventDefault();
-    this.onFirstTouch?.();
+    if (e.type === 'pointerup') this.onFirstTouch?.();
     const id = e.pointerId;
     if (e.type === 'pointerup' || e.type === 'pointercancel') {
       const was = this.pointers.get(id);

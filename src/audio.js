@@ -10,10 +10,18 @@ export class Sound {
     this.muted = false;
   }
 
-  // Browsers only allow audio after a user gesture; call this from a keydown.
+  // Browsers only allow audio after a user gesture; call this from a keydown,
+  // or for touch from pointerup/touchend (pointerdown doesn't count as a
+  // gesture for touch).
   unlock() {
+    // Safari's default audio session is "ambient", which the iPhone's silent
+    // switch mutes. A game should play like media.
+    if (navigator.audioSession && navigator.audioSession.type !== 'playback') {
+      try { navigator.audioSession.type = 'playback'; } catch {}
+    }
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      // iOS can also leave the context "interrupted" (calls, Siri, backgrounding).
+      if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
       return;
     }
     const AC = window.AudioContext || window.webkitAudioContext;
