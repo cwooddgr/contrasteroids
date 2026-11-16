@@ -13,7 +13,7 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 ## Things that aren't obvious
 
 - `binaryLambert` in `src/geometry.js` makes each face either facing a light or not, so the only grey comes from distance falloff (three's windowed falloff with `decay = 0`), never from surface angle. Detail on the rocks comes from the terminator and cast shadows, so rock relief (crater depth versus radius) must stay steep. Light intensities are multiplied by PI so a fully lit surface renders at 1.0.
-- The ship can't be lit by its own lights, so its material (`shipKey`) shades it from a fixed key direction in the shader instead.
+- Ships light themselves and take no shadows: ours is pure white (`SELF_LIT`), and the aliens are shaded from a fixed key direction in the shader (`shipKey`).
 - The HUD is a 2D canvas kept pure black and white by the post pass, and it is uploaded only when its content key changes (`Game.drawHud`).
 - `index.html` links `/assets/a11y.css` and `/assets/a11y.js` from dgrlabs.co; they 404 harmlessly in dev.
 - `docs/banner.jpg` and `dgrlabs_co/assets/contrasteroids.jpg` are the title screen read straight from the canvas (`toDataURL` right after `__game.r.render()`); regenerate them if the look changes.

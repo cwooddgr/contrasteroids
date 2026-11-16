@@ -20,7 +20,7 @@ function binaryLambert(material) {
   return material;
 }
 
-// Ships, ours and the aliens', light themselves. They are shaded instead by a fixed key light from the upper-left, low over the plane
+// Alien ships light themselves. They are shaded by a fixed key light from the upper-left, low over the plane
 // (the old sun angle), binary like everything else. The camera looks straight
 // down with no roll, so view space has the same axes as world space.
 function shipKey(material) {
@@ -180,8 +180,7 @@ export function makeGlow(radius, strength) {
 }
 
 // --- the player ship, pointing along +x ---
-// A sharp center ridge with steep flanks: under the key light one flank is lit
-// and the other is black, and they swap as the ship turns.
+// Always fully lit, pure white (Charlie's call), so it reads as a silhouette.
 export function makeShip() {
   const group = new THREE.Group();
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -194,14 +193,14 @@ export function makeShip() {
     V(0.9, 0.55, 0.05), V(0.9, -0.55, 0.05), // forward chines
     V(0.2, 0, -0.45), V(-1.2, 0, -0.35), // keel
   ]);
-  group.add(new THREE.Mesh(hull, SHIP_FLAT));
+  group.add(new THREE.Mesh(hull, SELF_LIT));
 
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.8), SHIP_FLAT);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.8), SELF_LIT);
   fin.position.set(-0.95, 0, 1.15);
   fin.rotation.y = -0.35;
   group.add(fin);
 
-  const canopy = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), SHIP_FLAT);
+  const canopy = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), SELF_LIT);
   canopy.scale.set(0.75, 0.28, 0.32);
   canopy.position.set(0.85, 0, 0.82);
   canopy.rotation.y = 0.45;
@@ -210,7 +209,7 @@ export function makeShip() {
   const flame = new THREE.Group();
   flame.position.set(-1.55, 0, 0.15);
   for (const y of [-0.85, 0.85]) {
-    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.2, 16), SHIP_SMOOTH);
+    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.2, 16), SELF_LIT);
     pod.rotation.z = Math.PI / 2;
     pod.position.set(-1.1, y, 0.2);
     group.add(pod);
