@@ -6,19 +6,39 @@
 
 ## Premise
 
-Space has no atmosphere, so there is no fill light. Anything not lit directly by the sun is pure black, and shadows have razor edges. Contrasteroids is a rock-shooting arcade game built on that idea: solid 3D white objects, one offscreen sun, and a strictly 1-bit picture. It is inspired by the genre, not a copy of any game: no vector look, no saucers, our own ships and enemies.
+Space has no atmosphere, so there is no fill light. Anything not lit directly is pure black, and shadows have razor edges. Contrasteroids is a rock-shooting arcade game built on that idea: solid 3D white objects lit only by the ship's own lamp, its bullets, and explosions. (Until 2026-11-16 the light was one offscreen sun and the picture was strictly 1-bit.) It is inspired by the genre, not a copy of any game: no vector look, no saucers, our own ships and enemies.
 
 ## Look
 
-- Strict 1-bit output (U). Every pixel on screen is pure black or pure white, including the HUD and title text. No dithering, no grey.
-- One directional light coming from the upper-left of the screen, at 15° elevation above the play plane. Charlie first chose 45° (U), then said to lower it if that looked better (U). At 45° the rocks were nearly all white, so I chose 15° (proposed-by-agent, tune with the dev keys). No ambient light. Hard shadow maps, so objects self-shadow (crater floors, lumps) and shadow each other when they overlap.
-- Dark sides are not helped in any way (U). No outline, no rim light; the lit shape implies the rest.
-- Sparse white starfield behind everything (U), one physical pixel per star (U). Rocks block stars naturally.
-- Orthographic camera looking straight down (U). The 3D shows only through lighting.
-- Self-lit things, which ignore the sun: bullets, the ship's thrust flame, sparks, blinking mine lights, and a brief explosion flash that lights nearby objects from the blast point.
-- Dev-only tuning (backtick toggles): J/L nudge the light's azimuth and I/K its elevation, shown on the HUD.
+> **Author:** Claude Code (spec writer, from a discussion with Charlie)
+> **Date:** 2026-11-16
+> **Status:** decided-by-user for the choices marked (U); proposed-by-agent for everything else
 
-Implementation: render the lit scene to an MSAA render target, then a fullscreen pass thresholds it to 0 or 1. The HUD is drawn to a 2D canvas and thresholded in the same pass.
+This section replaces the 2026-11-15 sun lighting. Charlie found the game too easy, and we moved the light onto the ship so seeing becomes part of the challenge.
+
+- **No sun, from wave 1 (U).** The only light sources are the ship, bullets, and explosions. No ambient light. Anything unlit is pure black.
+- **Ship spotlight (U):** a cone of light from the ship's nose, 50° wide (U), with a hard edge. It casts hard shadows, so a rock in the beam hides rocks behind it. Aiming and seeing are the same act.
+- **Ship halo (U):** a small omni light around the ship so nothing reaches it in total darkness. I propose a radius of about two large-rock diameters, to be tuned. Not confirmed.
+- **Bullets carry light (U):** each shot lights a small area around it as it flies, so firing into the dark shows what's there. I propose a short range and no shadows from bullet lights, for performance on phones. Not confirmed.
+- **Distance falloff in greyscale (U).** Light fades with distance, and the picture is no longer strictly 1-bit: far surfaces are grey, fading to black. No dithering (U). I'm assuming the surface angle stays binary, so terminators and shadow edges stay razor sharp and only distance makes grey. Charlie said "fade with distance" and didn't mention angle; not confirmed. I propose a falloff that stays near full white close to the ship and reaches black at a set range, rather than pure inverse-square, which never reaches zero.
+- **Black rocks show only by blocking stars (U, from Charlie's first pitch).** One-pixel stars are too sparse for that to read on Retina screens, so I propose a denser starfield or 2-pixel stars. Not confirmed.
+- **Lighting the ship itself:** its lights sit inside it, so they can't show its shape. I propose a small light that only affects the ship, hung above and to one side, so one flank stays white and the other black as it turns, as it does now. Not confirmed.
+- **Aliens are lit like rocks:** dark unless the beam, a halo, a bullet, or a blast reaches them. Their sounds (Skiff hum, Hunter whine) and the mines' blinking cores are the warning. Proposed, not confirmed.
+- **Title screen:** with no sun, the attract screen needs light. I propose a ship parked at center, slowly turning so its beam sweeps the drifting rocks. Not confirmed. The README banner, site card image, and `public/og.png` are regenerated from it.
+- **Between death and respawn** the only light is the death explosion's flash. Proposed.
+- The HUD stays pure black and white.
+- Self-lit things, which glow without being lit: bullets, the ship's thrust flame, sparks, blinking mine lights, and the explosion flash, which also lights nearby objects from the blast point.
+- Dark sides are not helped in any way (U, 2026-11-15). No outline, no rim light.
+- Orthographic camera looking straight down (U, 2026-11-15).
+- Dev-only tuning (backtick toggles): keys to adjust cone width, halo radius, and falloff range, shown on the HUD. Replaces the sun azimuth and elevation keys.
+
+Implementation (proposed): the rock and alien materials compute lit or unlit per light from surface angle and shadow, then multiply by that light's distance falloff, so the post pass no longer thresholds to 0 or 1. The post pass keeps the HUD at pure black and white. A spotlight shadow is one shadow map; the halo and bullet lights don't cast shadows, to avoid cube-map shadows on phones.
+
+### Superseded (2026-11-15)
+
+- ~~Strict 1-bit output (U). Every pixel on screen is pure black or pure white.~~ Replaced by greyscale distance falloff (U, 2026-11-16).
+- ~~One directional light from the upper-left at 15° elevation.~~ Replaced by the ship's lights (U, 2026-11-16).
+- ~~Sparse white starfield, one physical pixel per star (U).~~ Density under review so black rocks can be seen against it.
 
 ## Objects
 
