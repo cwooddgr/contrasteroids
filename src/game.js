@@ -54,7 +54,7 @@ export class Game {
     this.ship.rotation.order = 'ZYX'; // roll about the ship's own axis, then yaw
     this.ship.visible = false;
     this.scene.add(this.ship);
-    this.player = { x: 0, y: 0, vx: 0, vy: 0, angle: Math.PI / 2, bank: 0, alive: false };
+    this.player = { x: 0, y: 0, vx: 0, vy: 0, angle: Math.PI / 2, alive: false };
 
     this.SPARK_MAX = 900;
     const sparkPos = new Float32Array(this.SPARK_MAX * 3).fill(-1000);
@@ -160,7 +160,7 @@ export class Game {
 
   spawnPlayer() {
     Object.assign(this.player, {
-      x: 0, y: 0, vx: 0, vy: 0, angle: Math.PI / 2, bank: 0, r: SHIP_R,
+      x: 0, y: 0, vx: 0, vy: 0, angle: Math.PI / 2, r: SHIP_R,
       alive: true, invuln: 2.5, hyper: 0, hyperCooldown: 0, fireCooldown: 0, respawn: 0,
     });
     this.ship.visible = true;
@@ -260,7 +260,6 @@ export class Game {
     if (inp.held('ArrowLeft', 'KeyA')) turn += 1;
     if (inp.held('ArrowRight', 'KeyD')) turn -= 1;
     p.angle += turn * TURN * dt;
-    p.bank += (turn * -0.95 - p.bank) * Math.min(1, dt * 7);
 
     const thrusting = inp.held('ArrowUp', 'KeyW');
     if (thrusting) {
@@ -305,7 +304,7 @@ export class Game {
     if (p.invuln > 0) p.invuln -= dt;
     this.ship.visible = p.invuln > 0 ? Math.floor(p.invuln * 10) % 2 === 0 : true;
     this.ship.position.set(p.x, p.y, 0);
-    this.ship.rotation.set(p.bank, 0, p.angle);
+    this.ship.rotation.set(0, 0, p.angle);
   }
 
   fire(list, geom, x, y, vx, vy, life) {

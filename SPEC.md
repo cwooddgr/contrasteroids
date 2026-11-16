@@ -23,7 +23,7 @@ Implementation: render the lit scene to an MSAA render target, then a fullscreen
 ## Objects
 
 - **Rocks:** smooth, lumpy, and cratered (U), procedurally generated so no two match. Three sizes; large splits into two medium, medium into two small. Each tumbles on its own random axis. Rocks that collide split the same way (Charlie's request); two small rocks bounce off each other, and a fresh fragment ignores other rocks for about a second so one split can't chain into more.
-- **Ship:** classic inertial handling (U): rotate, thrust with drag, fire, hyperspace, screen wrap. Charlie asked for the ship to show the contrast effect more (U), so I gave it a sharp center ridge with steep flanks: one flank is lit and the other black, and they swap as it turns. A fin and two engine pods cast shadows on the hull, and it banks hard (about 55°) into turns.
+- **Ship:** classic inertial handling (U): rotate, thrust with drag, fire, hyperspace, screen wrap. Charlie asked for the ship to show the contrast effect more (U), so I gave it a sharp center ridge with steep flanks: one flank is lit and the other black, and they swap as it turns. A fin and two engine pods cast shadows on the hull. It used to bank about 55° into turns, but Charlie found that made the ship hard to read, so it stays level (U).
 - **Aliens** (original designs):
   - **Skiff:** a fast spindle that crosses the screen on a weaving path and fires aimed shots. From wave 1.
   - **Layer:** a slow ring with a hub that drops proximity mines. From wave 2.
