@@ -12,9 +12,9 @@ await p.evaluate(() => {
   g.drawHud = function () {
     const c = this.r.hud, w = this.r.pxW, h = this.r.pxH, k = h / 100;
     c.clearRect(0, 0, w, h); c.fillStyle = '#fff'; c.textBaseline = 'top'; c.textAlign = 'center';
-    c.font = `700 ${Math.round(k*11)}px "Courier New", monospace`; c.letterSpacing = `${Math.round(k*1.6)}px`;
+    c.font = `${Math.round(k*11)}px Audiowide, sans-serif`; c.letterSpacing = `${Math.round(k*1.6)}px`;
     c.fillText('CONTRASTEROIDS', w/2, h*0.40);
-    c.font = `700 ${Math.round(k*3.4)}px "Courier New", monospace`; c.letterSpacing = `${Math.round(k*0.6)}px`;
+    c.font = `${Math.round(k*3.4)}px Audiowide, sans-serif`; c.letterSpacing = `${Math.round(k*0.6)}px`;
     c.fillText('DGRLABS.CO/CONTRASTEROIDS', w/2, h*0.86);
     this.r.hudTexture.needsUpdate = true;
   };

@@ -1,3 +1,4 @@
+import '@fontsource/audiowide/latin-400.css';
 import { Renderer } from './render.js';
 import { Sound } from './audio.js';
 import { Input } from './input.js';
@@ -36,3 +37,7 @@ requestAnimationFrame(frame);
 
 // For debugging from the console.
 window.__game = game;
+
+// The HUD is drawn to a canvas, which can't wait for a web font; redraw it
+// once Audiowide has loaded.
+document.fonts.load('32px Audiowide').then(() => { renderer.hudDirty = true; });

@@ -828,7 +828,7 @@ export class Game {
     c.clearRect(0, 0, w, h);
     c.fillStyle = '#fff';
     c.textBaseline = 'top';
-    const font = (px) => `700 ${Math.round(px)}px "Courier New", ui-monospace, monospace`;
+    const font = (px) => `${Math.round(px)}px Audiowide, sans-serif`;
     const text = (s, x, y, px, align = 'left', spacing = 0) => {
       c.textAlign = align;
       // Shrink anything that would run off a narrow (portrait) screen.

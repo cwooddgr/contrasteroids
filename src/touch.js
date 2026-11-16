@@ -16,7 +16,7 @@ const CSS = `
 #touch:not(.play) [data-pause] { display: none; }
 #touch button { all: unset; box-sizing: border-box; width: 68px; height: 68px; border: 2px solid #fff;
   border-radius: 50%; color: #fff; background: #000; display: flex; align-items: center;
-  justify-content: center; font: 700 13px "Courier New", ui-monospace, monospace; letter-spacing: 1px; }
+  justify-content: center; font: 13px Audiowide, sans-serif; letter-spacing: 1px; }
 #touch button.big { width: 84px; height: 84px; }
 #touch button.small { width: 42px; height: 42px; font-size: 16px; }
 #touch button.on { background: #fff; color: #000; }
