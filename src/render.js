@@ -65,6 +65,14 @@ export class Renderer {
     this.scene.add(this.halo);
     this.applyLightTuning();
 
+    // Alien ships carry a halo like ours: one light per possible alien.
+    this.alienLights = [];
+    for (let i = 0; i < 3; i++) {
+      const p = new THREE.PointLight(0xffffff, 0, this.haloRange, 0);
+      this.scene.add(p);
+      this.alienLights.push(p);
+    }
+
     // Bullet lights: a fixed pool (one per allowed player shot) so the
     // shader's light count never changes. No shadows, to spare phones.
     this.bulletRange = 9;
@@ -145,6 +153,7 @@ export class Renderer {
     this.spot.distance = this.spotRange;
     this.spot.shadow.camera.far = this.spotRange;
     this.halo.distance = this.haloRange;
+    for (const p of this.alienLights || []) p.distance = this.haloRange;
   }
 
   // Place the ship's lights. angle is the ship's heading; on=false (dead, in
@@ -157,6 +166,18 @@ export class Renderer {
     this.spot.intensity = on ? Math.PI : 0;
     this.halo.position.set(x, y, this.lightHeight);
     this.halo.intensity = on ? Math.PI * this.haloLevel : 0;
+  }
+
+  alienLightsFor(aliens) {
+    this.alienLights.forEach((p, i) => {
+      const a = aliens[i];
+      if (a) {
+        p.position.set(a.x, a.y, this.lightHeight);
+        p.intensity = Math.PI * this.haloLevel;
+      } else {
+        p.intensity = 0;
+      }
+    });
   }
 
   // Bullet lights follow the first few player bullets.

@@ -20,7 +20,8 @@ function binaryLambert(material) {
   return material;
 }
 
-// Alien ships light themselves. They are shaded by a fixed key light from the upper-left, low over the plane
+// Alien ships light themselves, glow, and light their surroundings like ours
+// (see Renderer.alienLightsFor). They are shaded by a fixed key light from the upper-left, low over the plane
 // (the old sun angle), binary like everything else. The camera looks straight
 // down with no roll, so view space has the same axes as world space.
 function shipKey(material) {
@@ -249,6 +250,7 @@ export function makeSkiff() {
   }
   group.add(spin);
   group.userData.spin = spin;
+  group.add(makeGlow(7, 0.5));
   return selfShaded(group);
 }
 
@@ -269,6 +271,7 @@ export function makeLayer() {
   spin.rotation.x = 0.9;
   group.add(spin);
   group.userData.spin = spin;
+  group.add(makeGlow(7, 0.5));
   return selfShaded(group);
 }
 
@@ -284,6 +287,7 @@ export function makeHunter() {
   spin.add(collar);
   group.add(spin);
   group.userData.spin = spin;
+  group.add(makeGlow(7, 0.5));
   return selfShaded(group);
 }
 

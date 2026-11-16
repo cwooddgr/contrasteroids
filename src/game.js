@@ -238,6 +238,7 @@ export class Game {
       this.r.shipLights(p.x, p.y, p.angle, on);
     }
     this.r.bulletLightsFor(this.bullets);
+    this.r.alienLightsFor(this.aliens);
   }
 
   wrap(e) {
