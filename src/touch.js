@@ -12,7 +12,9 @@ const CSS = `
 #touch .right { right: calc(16px + env(safe-area-inset-right)); align-items: flex-end; }
 #touch .top { top: calc(12px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right));
   bottom: auto; gap: 10px; }
-#touch.title .top, #touch.gameover .top { display: flex; }
+#touch.title .top, #touch.gameover .top, #touch.initials .top { display: flex; }
+#touch.initials .pad.left, #touch.initials .pad.right { display: flex; }
+#touch.initials .stack { visibility: hidden; }
 #touch:not(.play) [data-pause] { display: none; }
 #touch button { all: unset; box-sizing: border-box; width: 68px; height: 68px; border: 2px solid #fff;
   border-radius: 50%; color: #fff; background: #000; display: flex; align-items: center;

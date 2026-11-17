@@ -29,7 +29,9 @@ On a phone or tablet, buttons appear on screen. Your left thumb rotates and your
 
 ## Scoring
 
-Large rocks are worth 20 points, medium rocks 50, and small rocks 100. A mine is worth 50. The aliens are worth 200, 500, and 1,000 in the order they appear. You get an extra ship every 10,000 points, and the browser keeps a high score for each mode.
+Large rocks are worth 20 points, medium rocks 50, and small rocks 100. A mine is worth 50. The aliens are worth 200, 500, and 1,000 in the order they appear. You get an extra ship every 10,000 points.
+
+Each mode has an online top ten for today (the day turns over at midnight UTC) and one for all time. If your score makes today's list, you put in three initials. On a keyboard you can type them, or use the arrows and Enter. On a phone the arrow buttons change the letter and FIRE locks it in. The browser also remembers your own best for each mode.
 
 ## How it's made
 
@@ -43,6 +45,19 @@ npm run dev
 ```
 
 `npm run build` writes a static copy to `dist/` with relative paths, so it can be hosted from any folder. `npm run publish:site` builds it and copies it into a sibling `dgrlabs_co` checkout at `contrasteroids/`.
+
+## The score server
+
+The boards come from a small Cloudflare Worker in `server/`, with a D1 database. Since the game's code is public, the server doesn't trust anything the browser tells it. It times each game itself from the moment you start, takes one score per game, and checks that the score adds up from the rocks and ships you hit. It then checks those kills against what the game allows in that much time, such as how many rocks the waves you reached could have held, how fast the gun fires, and how often aliens turn up. The rules live in `src/scoring.js`, which the game and the server share. Someone patient enough can still fake a score that passes, so scores can be deleted by hand.
+
+```
+cd server
+npm install
+npm test          # the rule checks
+npm run dev       # local server on :8787 (needs a .dev.vars with SALT and ADMIN_TOKEN)
+```
+
+Point the game at a local server with `VITE_SCORES_API=http://localhost:8787 npm run dev`.
 
 ## License
 

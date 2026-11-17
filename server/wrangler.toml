@@ -1,0 +1,20 @@
+# Contrasteroids score server. See src/index.js and ../src/scoring.js.
+name = "contrasteroids-scores"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+routes = [
+  { pattern = "scores.dgrlabs.co", custom_domain = true },
+]
+workers_dev = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "contrasteroids-scores"
+database_id = "f0c4502a-0e40-4754-ac0b-8fd03276878d"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["17 4 * * *"]
+
+# Secrets (wrangler secret put): SALT hashes IPs for rate limits; ADMIN_TOKEN deletes scores.

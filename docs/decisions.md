@@ -54,3 +54,18 @@
 - I bundled Audiowide through npm (`@fontsource/audiowide`, OFL) instead of linking Google Fonts, so the page makes no third-party font requests.
 - I used the Easy title screen for the README banner, site card image, and og.png. The Hard title is mostly black and reads poorly at thumbnail size.
 - I rewrote the README intro, controls, and "How it's made" for the two modes. Charlie hasn't reviewed the wording. I left his site card text alone; it doesn't describe the lighting.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-17
+> **Status:** decided-by-user
+
+- Charlie asked for "an internet high score server with daily and all time scores", made "somewhat unhackable, since this is open source". From multiple-choice questions he chose plausibility checks over server-side replay, three-letter initials, a midnight UTC reset, and keeping the screen-shaped playfield.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-17
+> **Status:** proposed-by-agent
+
+- I hosted it as a Worker with D1 at `scores.dgrlabs.co`, like backfence and milliways, and deployed it without asking separately, since the request was for an internet server.
+- The admin token is in the macOS Keychain (service `contrasteroids-scores-admin`), not in any file. The IP salt is a Worker secret only.
+- I put the point values and the check in one shared file (`src/scoring.js`) so the server can't drift from the game.
+- The title screen alternates every 8 s between the controls and the boards. Game over shows both boards with our new entry bracketed. Not confirmed.

@@ -7,8 +7,9 @@ A rock-shooting arcade game with solid white 3D objects, no ambient light, and h
 - `npm run dev`: dev server (Vite)
 - `npm run build`: static build to `dist/` with relative paths
 - `npm run publish:site`: build and replace `../dgrlabs_co/contrasteroids/` with `dist/`; then commit and push dgrlabs_co too. Never hand-edit the site copy.
+- `cd server && npm test`: rule checks for the score server. `npm run deploy` there ships the Worker (`scores.dgrlabs.co`); schema changes go in `server/migrations/` and `npm run migrate`.
 
-There are no tests. Check changes by running the game and taking a screenshot; `window.__game` exposes the game object in the console.
+Check game changes by running it and taking a screenshot; `window.__game` exposes the game object in the console. Without the Chrome extension, drive headless Chrome with puppeteer-core as `docs/og-capture.mjs` does.
 
 ## Things that aren't obvious
 
@@ -21,8 +22,9 @@ There are no tests. Check changes by running the game and taking a screenshot; `
 - `public/og.png` is the 1200x630 link-preview card, captured from the canvas with a title-and-URL HUD by `docs/og-capture.mjs`; regenerate it with them.
 - Public text (README, site card, in-game copy) follows the workspace no-AI-tells rule.
 - iOS touch quirks in `src/touch.js` (see `docs/decisions.md`): the overlay cancels touchstart/touchmove/touchend because Safari double-tap zooms despite `touch-action: none` (WebKit bug 218015), and audio unlocks on pointerup/touchend, never pointerdown. `src/audio.js` sets the audio session to playback so the silent switch doesn't mute it.
+- Online scores: point values live in `src/scoring.js`, shared with the Worker, so change points or wave sizes there and redeploy the server too, or real games get rejected. Game time must never run ahead of wall time, since the server's limits rely on it. `npm run dev` talks to the production score server unless `VITE_SCORES_API` is set. Delete a score: `curl -X DELETE -H "Authorization: Bearer $(security find-generic-password -s contrasteroids-scores-admin -w)" https://scores.dgrlabs.co/scores/<id>`.
 - Backtick toggles dev mode. Easy: J/L sun azimuth, I/K elevation. Hard: J/L cone width, I/K spotlight range, U/O halo range.
 
 ## Status
 
-2026-11-16: Easy and Hard modes (Hard has glowing ships and mines), twinkling stars, sparkly shots, and the Audiowide font are live at https://dgrlabs.co/contrasteroids/. History: `docs/status.md`.
+2026-11-17: online daily and all-time boards built; the score server is live at scores.dgrlabs.co, but the game that uses it isn't published yet (the site still has the 2026-11-16 build). History: `docs/status.md`.

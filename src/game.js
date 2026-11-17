@@ -4,13 +4,15 @@ import {
   makeRockMesh, makeShip, makeSkiff, makeLayer, makeHunter, makeMine,
   DEBRIS_GEOMS, WHITE_SMOOTH, SELF_LIT, BULLET_GEOM, ENEMY_BULLET_GEOM, styleShip,
 } from './geometry.js';
+import { POINTS, waveRocks, initialsOk } from './scoring.js';
+import { Scores, newKills } from './scores.js';
 
+// Points live in scoring.js, which the score server checks games against.
 const ROCK = {
-  3: { r: 8, detail: 5, score: 20, speed: [4, 9], mass: 7 },
-  2: { r: 4.5, detail: 4, score: 50, speed: [7, 14], mass: 3 },
-  1: { r: 2.4, detail: 3, score: 100, speed: [10, 19], mass: 1 },
+  3: { r: 8, detail: 5, speed: [4, 9], mass: 7 },
+  2: { r: 4.5, detail: 4, speed: [7, 14], mass: 3 },
+  1: { r: 2.4, detail: 3, speed: [10, 19], mass: 1 },
 };
-const SCORE = { skiff: 200, layer: 500, hunter: 1000, mine: 50 };
 
 const SHIP_R = 1.5;
 const TURN = 4.6;
@@ -27,6 +29,8 @@ const EXTRA_LIFE = 10000;
 // Easy keeps the original key, so high scores from before modes carry over.
 const HI_KEYS = { easy: 'contrasteroids.hi', hard: 'contrasteroids.hi.hard' };
 const DIFFICULTY_KEY = 'contrasteroids.difficulty';
+const INITIALS_KEY = 'contrasteroids.initials';
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -78,6 +82,12 @@ export class Game {
     this.mode = 'title';
     this.time = 0;
     this.hudKey = '';
+    this.net = new Scores();
+    this.lastRefresh = -Infinity;
+    this.games = 0; // so a slow /start reply can't attach to a later game
+    this.session = null;
+    this.netStatus = '';
+    this.myEntry = null; // { mode, id } of our last saved score, marked on the boards
     this.setDifficulty(this.difficulty);
     this.attract();
   }
@@ -129,13 +139,18 @@ export class Game {
     this.wave = 0;
     this.nextLife = EXTRA_LIFE;
     this.gameOverTimer = 0;
+    this.kills = newKills();
+    this.session = null;
+    this.netStatus = '';
+    const game = ++this.games;
+    this.net.start(this.difficulty).then((id) => { if (this.games === game) this.session = id; });
     this.spawnPlayer();
     this.nextWave();
   }
 
   nextWave() {
     this.wave += 1;
-    const count = Math.min(3 + this.wave, 11);
+    const count = waveRocks(this.wave);
     for (let i = 0; i < count; i++) {
       let x, y;
       do {
@@ -194,7 +209,7 @@ export class Game {
 
     if (inp.pressed('Backquote')) { this.dev = !this.dev; }
     if (this.dev) this.tuneLight(dt);
-    if (inp.pressed('KeyM')) this.sound.toggleMute();
+    if (inp.pressed('KeyM') && this.mode !== 'initials') this.sound.toggleMute(); // M is a letter there
 
     if (this.mode === 'play') {
       if (inp.pressed('KeyP', 'Escape') || (this.paused && inp.pressed('Tap'))) {
@@ -207,7 +222,10 @@ export class Game {
       this.updateMines(dt);
       this.collide();
       this.updateWave(dt);
+    } else if (this.mode === 'initials') {
+      this.updateInitials(dt);
     } else {
+      if (this.time - this.lastRefresh > 60) this.refreshBoards();
       // Title and game over: Left/Right choose the mode, Enter starts. On
       // touch, tapping the left or right half starts Easy or Hard.
       if (inp.pressed('ArrowLeft', 'KeyA') && this.difficulty !== 'easy') this.setDifficulty('easy');
@@ -231,6 +249,77 @@ export class Game {
     this.updateLights(dt);
     this.r.update(dt);
     if (this.bannerTimer > 0) this.bannerTimer -= dt;
+  }
+
+  // ---------- online scores ----------
+
+  refreshBoards() {
+    this.lastRefresh = this.time;
+    for (const m of ['easy', 'hard']) this.net.refresh(m);
+  }
+
+  // At game over: ask for initials if the score could make today's board.
+  endGame() {
+    this.mode = 'gameover';
+    this.refreshBoards();
+    if (!this.session || !this.net.qualifies(this.difficulty, this.score)) return;
+    let saved = 'AAA';
+    try { saved = localStorage.getItem(INITIALS_KEY) || saved; } catch { /* storage unavailable */ }
+    if (!/^[A-Z]{3}$/.test(saved)) saved = 'AAA';
+    this.entry = { letters: saved.split(''), pos: 0, bad: false, repeat: 0 };
+    this.mode = 'initials';
+  }
+
+  // Left/Right (or Up/Down) change the letter, fire or Enter locks it in,
+  // Backspace or hyperspace go back, typing a letter sets it, Escape skips.
+  updateInitials(dt) {
+    const inp = this.input, e = this.entry;
+    const step = (d) => {
+      const i = ALPHABET.indexOf(e.letters[e.pos]);
+      e.letters[e.pos] = ALPHABET[(i + d + 26) % 26];
+      e.bad = false;
+    };
+    const next = inp.held('ArrowRight', 'ArrowUp'), prev = inp.held('ArrowLeft', 'ArrowDown');
+    if (inp.pressed('ArrowRight', 'ArrowUp')) { step(1); e.repeat = 0.4; }
+    else if (inp.pressed('ArrowLeft', 'ArrowDown')) { step(-1); e.repeat = 0.4; }
+    else if (next || prev) {
+      e.repeat -= dt;
+      if (e.repeat <= 0) { step(next ? 1 : -1); e.repeat = 0.09; }
+    }
+    for (const code of inp.hits) {
+      const m = /^Key([A-Z])$/.exec(code);
+      if (m) {
+        e.letters[e.pos] = m[1];
+        e.bad = false;
+        if (e.pos < 2) e.pos++;
+      }
+    }
+    if (inp.pressed('Backspace', 'ShiftLeft', 'ShiftRight') && e.pos > 0) e.pos--;
+    if (inp.pressed('Escape')) { this.mode = 'gameover'; return; }
+    if (inp.pressed('Space', 'Enter', 'NumpadEnter')) {
+      if (e.pos < 2) { e.pos++; return; }
+      const initials = e.letters.join('');
+      if (!initialsOk(initials)) { e.bad = true; return; }
+      try { localStorage.setItem(INITIALS_KEY, initials); } catch { /* storage unavailable */ }
+      this.saveScore(initials);
+    }
+  }
+
+  saveScore(initials) {
+    const mode = this.difficulty, game = this.games;
+    this.mode = 'gameover';
+    this.netStatus = 'SAVING';
+    this.net.submit({ session: this.session, initials, score: this.score, wave: this.wave, kills: this.kills })
+      .then((r) => {
+        if (this.games !== game) return;
+        if (r.error) {
+          this.netStatus = r.error === 'offline' ? 'NO CONNECTION, SCORE NOT SAVED' : 'SCORE NOT ACCEPTED';
+          return;
+        }
+        this.myEntry = { mode, id: r.id };
+        this.netStatus = `TODAY #${r.today}   ALL TIME #${r.allTime}`;
+        this.net.refresh(mode);
+      });
   }
 
   pause() {
@@ -617,7 +706,7 @@ export class Game {
       target = this.mines.find((m) => this.hit(b, m));
       if (target) {
         this.removeEntity(this.bullets, b);
-        this.addScore(SCORE.mine);
+        this.addScore('mine');
         this.explode(target.x, target.y, 1, false);
         this.removeEntity(this.mines, target);
       }
@@ -667,7 +756,7 @@ export class Game {
   }
 
   breakRock(rock, byPlayer, impactor) {
-    if (byPlayer) this.addScore(ROCK[rock.size].score);
+    if (byPlayer) this.addScore(`r${rock.size}`);
     this.explode(rock.x, rock.y, rock.size, true);
     this.removeEntity(this.rocks, rock);
     if (rock.size > 1) {
@@ -683,7 +772,7 @@ export class Game {
   }
 
   killAlien(a, byPlayer) {
-    if (byPlayer) this.addScore(SCORE[a.type]);
+    if (byPlayer) this.addScore(a.type);
     this.explode(a.x, a.y, 2, false, true);
     this.sound.alienDeath();
     this.removeEntity(this.aliens, a);
@@ -702,8 +791,9 @@ export class Game {
     if (this.lives <= 0) this.gameOverTimer = 2.5;
   }
 
-  addScore(n) {
-    this.score += n;
+  addScore(kind) {
+    this.kills[kind]++;
+    this.score += POINTS[kind];
     if (this.score >= this.nextLife) {
       this.nextLife += EXTRA_LIFE;
       this.lives += 1;
@@ -715,12 +805,12 @@ export class Game {
     if (this.lives <= 0 && !this.player.alive) {
       this.gameOverTimer -= dt;
       if (this.gameOverTimer <= 0) {
-        this.mode = 'gameover';
         this.sound.silenceLoops();
         if (this.score > this.hi) {
           this.his[this.difficulty] = this.score;
           try { localStorage.setItem(HI_KEYS[this.difficulty], String(this.score)); } catch { /* storage unavailable */ }
         }
+        this.endGame();
       }
       return;
     }
@@ -817,6 +907,8 @@ export class Game {
     const blinkOn = Math.floor(this.time * 2) % 2 === 0;
     const key = [
       this.mode, this.difficulty, this.score, this.hi, this.lives, this.paused,
+      this.net.version, this.netStatus, this.boardPanel(), this.myEntry?.id,
+      this.mode === 'initials' && `${this.entry.letters.join('')}${this.entry.pos}${this.entry.bad}`,
       this.dev && [this.r.coneDeg, this.r.spotRange, this.r.haloRange, this.r.lightAzimuth, this.r.lightElevation].map(Math.round).join(), this.bannerTimer > 0 && this.banner, blinkOn, this.touch,
     ].join('|');
     if (key === this.hudKey && !this.r.hudDirty) return;
@@ -830,13 +922,13 @@ export class Game {
     c.fillStyle = '#fff';
     c.textBaseline = 'top';
     const font = (px) => `${Math.round(px)}px Audiowide, sans-serif`;
-    const text = (s, x, y, px, align = 'left', spacing = 0) => {
+    const text = (s, x, y, px, align = 'left', spacing = 0, maxW = w * 0.92) => {
       c.textAlign = align;
       // Shrink anything that would run off a narrow (portrait) screen.
       for (let i = 0; i < 2; i++) {
         c.font = font(px);
         if ('letterSpacing' in c) c.letterSpacing = `${Math.round(spacing)}px`;
-        const fit = (w * 0.92) / c.measureText(s).width;
+        const fit = maxW / c.measureText(s).width;
         if (fit >= 1) break;
         px *= fit;
         spacing *= fit;
@@ -849,35 +941,59 @@ export class Game {
     const choice = (y) => {
       for (const [d, x] of [['easy', 0.4], ['hard', 0.6]]) {
         const label = d.toUpperCase();
-        text(!this.touch && d === this.difficulty ? `[ ${label} ]` : label, w * x, y, k * 3.6, 'center', k * 0.5);
+        text(!this.touch && d === this.difficulty ? `[ ${label} ]` : label, w * x, y, k * 3.6, 'center', k * 0.5, w * 0.18);
       }
     };
     const D = this.difficulty.toUpperCase();
+    // Today's and all-time top tens, side by side; our latest entry is bracketed.
+    const boards = (y) => {
+      const b = this.net.boards[this.difficulty];
+      const mine = this.myEntry?.mode === this.difficulty ? this.myEntry.id : null;
+      for (const [title, list, x] of [['TODAY', b.today, 0.3], ['ALL TIME', b.allTime, 0.7]]) {
+        text(`${title}  ${D}`, w * x, y, k * 2.4, 'center', k * 0.3, w * 0.38);
+        if (!list.length) text('NONE YET', w * x, y + k * 4.5, k * 2.2, 'center', 0, w * 0.38);
+        list.forEach((e, i) => {
+          const row = `${i + 1}.  ${e.initials}  ${e.score}`;
+          text(e.id === mine ? `[ ${row} ]` : row, w * x, y + k * (4.5 + i * 3.3), k * 2.2, 'center', 0, w * 0.38);
+        });
+      }
+    };
 
     if (this.mode === 'title') {
       text('CONTRASTEROIDS', w / 2, h * 0.3, k * 8, 'center', k * 1.2);
       choice(h * 0.44);
       if (blinkOn) text(go, w / 2, h * 0.5, k * 2.4, 'center', k * 0.3);
-      const lines = this.touch ? [
-        'LEFT THUMB  ROTATE',
-        'RIGHT THUMB  THRUST  FIRE',
-        'H  HYPERSPACE',
-        ...(w < h ? ['', 'TURN SIDEWAYS FOR MORE ROOM'] : []),
-      ] : [
-        'LEFT / RIGHT  ROTATE      UP  THRUST',
-        'SPACE  FIRE      SHIFT  HYPERSPACE',
-        'P  PAUSE      M  MUTE',
-      ];
-      lines.forEach((l, i) => text(l, w / 2, h * 0.62 + i * k * 4, k * 2.4, 'center'));
-      if (this.hi) text(`${D} HIGH SCORE ${this.hi}`, w / 2, h * 0.86, k * 2.6, 'center');
+      if (this.boardPanel()) {
+        boards(h * 0.58);
+      } else {
+        this.titleHelp(text, w, h, k, D);
+      }
     } else {
       text(String(this.score), k * 3, k * 2.5, k * 4.2);
       text(`${D}  HI ${this.hi}`, w / 2, k * 2.5, k * 2.4, 'center');
       for (let i = 0; i < Math.min(this.lives, 10); i++) this.lifeIcon(c, k * (4 + i * 3.4), k * 9.5, k * 1.2);
-      if (this.mode === 'gameover') {
-        text('GAME OVER', w / 2, h * 0.4, k * 7, 'center', k);
-        choice(h * 0.53);
-        if (blinkOn) text(go, w / 2, h * 0.59, k * 2.4, 'center', k * 0.3);
+      const board = this.net.boards[this.difficulty];
+      if (this.mode === 'initials') {
+        const e = this.entry;
+        text('GAME OVER', w / 2, h * 0.22, k * 7, 'center', k);
+        text(`${D} TOP TEN SCORE. ENTER YOUR INITIALS`, w / 2, h * 0.36, k * 2.6, 'center', k * 0.3);
+        const gap = k * 8;
+        e.letters.forEach((l, i) => {
+          const x = w / 2 + (i - 1) * gap;
+          text(l, x, h * 0.43, k * 8, 'center');
+          if (i === e.pos && blinkOn) c.fillRect(x - k * 2.8, h * 0.43 + k * 9.5, k * 5.6, k * 0.8);
+        });
+        const help = e.bad ? 'PICK DIFFERENT INITIALS'
+          : this.touch ? 'ARROWS CHANGE THE LETTER   FIRE LOCKS IT IN'
+            : 'TYPE OR USE THE ARROWS   ENTER TO SAVE   ESC TO SKIP';
+        text(help, w / 2, h * 0.6, k * 2.2, 'center', k * 0.2);
+      } else if (this.mode === 'gameover') {
+        const y0 = board ? 0.22 : 0.4;
+        text('GAME OVER', w / 2, h * y0, k * 7, 'center', k);
+        if (this.netStatus) text(this.netStatus, w / 2, h * (y0 + 0.1), k * 2.6, 'center', k * 0.3);
+        choice(h * (y0 + 0.16));
+        if (blinkOn) text(go, w / 2, h * (y0 + 0.22), k * 2.4, 'center', k * 0.3);
+        if (board) boards(h * 0.56);
       } else if (this.paused) {
         text('PAUSED', w / 2, h * 0.45, k * 6, 'center', k);
         if (this.touch) text('TAP TO RESUME', w / 2, h * 0.55, k * 3, 'center', k * 0.5);
@@ -893,6 +1009,27 @@ export class Game {
       k * 3, h - k * 5, k * 2.2);
     }
     this.r.hudTexture.needsUpdate = true;
+  }
+
+  // The title's help panel: controls and our own best for this mode.
+  titleHelp(text, w, h, k, D) {
+    const lines = this.touch ? [
+      'LEFT THUMB  ROTATE',
+      'RIGHT THUMB  THRUST  FIRE',
+      'H  HYPERSPACE',
+      ...(w < h ? ['', 'TURN SIDEWAYS FOR MORE ROOM'] : []),
+    ] : [
+      'LEFT / RIGHT  ROTATE      UP  THRUST',
+      'SPACE  FIRE      SHIFT  HYPERSPACE',
+      'P  PAUSE      M  MUTE',
+    ];
+    lines.forEach((l, i) => text(l, w / 2, h * 0.62 + i * k * 4, k * 2.4, 'center'));
+    if (this.hi) text(`${D} HIGH SCORE ${this.hi}`, w / 2, h * 0.86, k * 2.6, 'center');
+  }
+
+  // The title alternates between the controls and the boards, once boards have loaded.
+  boardPanel() {
+    return this.mode === 'title' && !!this.net.boards[this.difficulty] && Math.floor(this.time / 8) % 2 === 1;
   }
 
   lifeIcon(c, x, y, s) {
