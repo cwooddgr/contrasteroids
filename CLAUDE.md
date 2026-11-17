@@ -27,4 +27,4 @@ Check game changes by running it and taking a screenshot; `window.__game` expose
 
 ## Status
 
-2026-11-17: online daily and all-time boards built; the score server is live at scores.dgrlabs.co, but the game that uses it isn't published yet (the site still has the 2026-11-16 build). History: `docs/status.md`.
+2026-11-17: online daily and all-time boards (scores.dgrlabs.co) are live at https://dgrlabs.co/contrasteroids/, with plausibility checks only. History: `docs/status.md`.

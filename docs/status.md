@@ -18,3 +18,4 @@
 ## 2026-11-17
 
 Added online daily and all-time top tens per mode, with arcade initials. The Worker and D1 database are deployed at scores.dgrlabs.co and checked from curl (fake scores rejected, session reuse rejected, admin delete works). The game side was checked in headless Chrome against a local server, in landscape and in portrait with touch. The site isn't republished yet.
+Published the same day (dgrlabs_co 9ca8051); the live page loads both boards.

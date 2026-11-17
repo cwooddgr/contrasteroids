@@ -69,3 +69,9 @@
 - The admin token is in the macOS Keychain (service `contrasteroids-scores-admin`), not in any file. The IP salt is a Worker secret only.
 - I put the point values and the check in one shared file (`src/scoring.js`) so the server can't drift from the game.
 - The title screen alternates every 8 s between the controls and the boards. Game over shows both boards with our new entry bracketed. Not confirmed.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-17
+> **Status:** decided-by-user
+
+- Charlie asked whether submissions could be limited to dgrlabs.co. I explained that an Origin check can be faked with one header and that Cloudflare Turnstile would be the real version. He chose to leave it as it is (no Origin enforcement, no Turnstile) and to publish.
