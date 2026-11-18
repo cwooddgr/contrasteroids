@@ -23,6 +23,7 @@ Check game changes by running it and taking a screenshot; `window.__game` expose
 - Public text (README, site card, in-game copy) follows the workspace no-AI-tells rule.
 - iOS touch quirks in `src/touch.js` (see `docs/decisions.md`): the overlay cancels touchstart/touchmove/touchend because Safari double-tap zooms despite `touch-action: none` (WebKit bug 218015), and audio unlocks on pointerup/touchend, never pointerdown. `src/audio.js` sets the audio session to playback so the silent switch doesn't mute it.
 - Online scores: point values live in `src/scoring.js`, shared with the Worker, so change points or wave sizes there and redeploy the server too, or real games get rejected. Game time must never run ahead of wall time, since the server's limits rely on it. `npm run dev` talks to the production score server unless `VITE_SCORES_API` is set. Delete a score: `curl -X DELETE -H "Authorization: Bearer $(security find-generic-password -s contrasteroids-scores-admin -w)" https://scores.dgrlabs.co/scores/<id>`.
+- `arcade/` is the cabinet wrapper for the house arcade iMac (`arcade/build.sh`; installed by the house project). It loads the live site with `?arcade`, so the panel bindings in `src/input.js` ship with `npm run publish:site`.
 - Backtick toggles dev mode. Easy: J/L sun azimuth, I/K elevation. Hard: J/L cone width, I/K spotlight range, U/O halo range.
 
 ## Status

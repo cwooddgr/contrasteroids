@@ -5,6 +5,7 @@ import {
   DEBRIS_GEOMS, WHITE_SMOOTH, SELF_LIT, BULLET_GEOM, ENEMY_BULLET_GEOM, styleShip,
 } from './geometry.js';
 import { POINTS, waveRocks, initialsOk } from './scoring.js';
+import { ARCADE } from './input.js';
 import { Scores, newKills } from './scores.js';
 
 // Points live in scoring.js, which the score server checks games against.
@@ -935,7 +936,8 @@ export class Game {
       }
       c.fillText(s, x, y);
     };
-    const go = this.touch ? 'TAP A SIDE TO START' : 'LEFT / RIGHT TO CHOOSE   ENTER TO START';
+    const go = this.touch ? 'TAP A SIDE TO START'
+      : `LEFT / RIGHT TO CHOOSE   ${ARCADE ? 'PRESS START' : 'ENTER TO START'}`;
     // The mode choice: the chosen one is bracketed (keyboard only; on touch,
     // tapping a side picks it).
     const choice = (y) => {
@@ -984,7 +986,7 @@ export class Game {
           if (i === e.pos && blinkOn) c.fillRect(x - k * 2.8, h * 0.43 + k * 9.5, k * 5.6, k * 0.8);
         });
         const help = e.bad ? 'PICK DIFFERENT INITIALS'
-          : this.touch ? 'ARROWS CHANGE THE LETTER   FIRE LOCKS IT IN'
+          : this.touch || ARCADE ? 'ARROWS CHANGE THE LETTER   FIRE LOCKS IT IN'
             : 'TYPE OR USE THE ARROWS   ENTER TO SAVE   ESC TO SKIP';
         text(help, w / 2, h * 0.6, k * 2.2, 'center', k * 0.2);
       } else if (this.mode === 'gameover') {
@@ -1018,6 +1020,9 @@ export class Game {
       'RIGHT THUMB  THRUST  FIRE',
       'H  HYPERSPACE',
       ...(w < h ? ['', 'TURN SIDEWAYS FOR MORE ROOM'] : []),
+    ] : ARCADE ? [
+      'LEFT / RIGHT  ROTATE      UP  THRUST',
+      'BUTTON 1  FIRE      BUTTON 2  HYPERSPACE',
     ] : [
       'LEFT / RIGHT  ROTATE      UP  THRUST',
       'SPACE  FIRE      SHIFT  HYPERSPACE',

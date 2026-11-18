@@ -1,17 +1,26 @@
 // Keyboard state with edge detection ("pressed this frame").
 const BLOCK = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
 
+// ?arcade is set by the cabinet wrapper (arcade/). The panel's encoder sends
+// LCtrl for button 1, LAlt for button 2, and 1 for P1 Start, so those stand in
+// for fire, hyperspace, and Enter. Left off on the web, where Ctrl and Alt are
+// browser shortcuts.
+export const ARCADE = new URLSearchParams(location.search).has('arcade');
+const ALIAS = ARCADE ? { ControlLeft: 'Space', AltLeft: 'ShiftLeft', Digit1: 'Enter' } : {};
+const code = (e) => ALIAS[e.code] || e.code;
+
 export class Input {
   constructor(onFirstKey) {
     this.down = new Set();
     this.hits = new Set();
     window.addEventListener('keydown', (e) => {
-      if (BLOCK.has(e.code)) e.preventDefault();
+      const c = code(e);
+      if (BLOCK.has(c) || c !== e.code) e.preventDefault();
       onFirstKey?.();
-      if (!e.repeat) this.hits.add(e.code);
-      this.down.add(e.code);
+      if (!e.repeat) this.hits.add(c);
+      this.down.add(c);
     });
-    window.addEventListener('keyup', (e) => this.down.delete(e.code));
+    window.addEventListener('keyup', (e) => this.down.delete(code(e)));
     window.addEventListener('blur', () => this.down.clear());
   }
 
