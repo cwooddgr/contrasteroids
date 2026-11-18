@@ -27,3 +27,9 @@ Published the same day (dgrlabs_co 9ca8051); the live page loads both boards.
 > **Status:** proposed-by-agent
 
 Contrasteroids runs on the house arcade iMac (2015, Intel HD 6000, macOS 12) from ES-DE's Arcade list, through the `arcade/` WKWebView wrapper, which the house session installed. Getting there took three fixes: a Safari 15 build target (the iMac's WebKit can't parse class static blocks), a reduced-quality default (`shadow=2048&msaa=0&scale=0.75`, picked from a `?bench` run on the iMac), and Charlie's button map from his MAME Asteroids. Charlie played both modes and said it "felt smooth". The iMac's log showed 59 to 60 fps in play after a 52 to 53 warm-up sample. Sound, the red-button quit, and the button layout were confirmed at the cabinet.
+
+Later on 2026-11-18 (status line before this entry: on the arcade iMac at 60 fps; web game live with online boards):
+
+- Fixed new rocks and aliens drawing for one frame at the origin, beside a freshly spawned ship (f01f677; published as dgrlabs_co d493c0b). Checked in headless Chrome: mesh positions were (0, 0) before the fix and matched the logical position after.
+- Rocks now pass in front of the title text, and in Hard a short spotlight fan shows at the ship's nose (b5c4e4f, shortened in c3300ed). Published as dgrlabs_co d26b57a; the live page serves the new bundle.
+- puppeteer-core is now a dev dependency (075fcaa).

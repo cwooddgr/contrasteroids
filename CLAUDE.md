@@ -28,4 +28,4 @@ Check game changes by running it and taking a screenshot; `window.__game` expose
 
 ## Status
 
-2026-11-18: also on the house arcade iMac (ES-DE Arcade list) via the `arcade/` wrapper, holding 60 fps in play at reduced quality; the web game is live at https://dgrlabs.co/contrasteroids/ with online daily and all-time boards. History: `docs/status.md`.
+2026-11-18: live at https://dgrlabs.co/contrasteroids/ (dgrlabs_co d26b57a) with online boards, rocks over the title text, and the Hard spotlight fan; also on the house arcade iMac via `arcade/`. History: `docs/status.md`.
