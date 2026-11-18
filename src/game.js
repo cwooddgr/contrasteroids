@@ -189,6 +189,9 @@ export class Game {
       ownsGeometry: true,
       born: this.time,
     };
+    // Place the mesh now: rocks split in collideRocks() after updateRocks()
+    // has run, so otherwise they'd render one frame at the origin.
+    mesh.position.set(x, y, rock.z);
     this.scene.add(mesh);
     this.rocks.push(rock);
     return rock;
@@ -574,6 +577,7 @@ export class Game {
       };
     }
     a.t = 0;
+    a.mesh.position.set(a.x, a.y, 0); // spawned after this frame's position pass
     this.scene.add(a.mesh);
     this.aliens.push(a);
   }
@@ -851,6 +855,7 @@ export class Game {
       mesh.receiveShadow = true;
       const scale = rand(0.35, 0.8) * (isRock ? size * 0.55 : 0.6);
       mesh.scale.setScalar(scale);
+      mesh.position.set(x, y, 0);
       const a = rand(0, Math.PI * 2);
       const s = rand(5, 18);
       this.scene.add(mesh);
