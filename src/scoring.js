@@ -19,8 +19,10 @@ export const ALIEN_MIN_GAP = 4.5; // s, the shortest alien spawn interval (9 s x
 export const MINE_MIN_GAP = 2.4; // s between drops from one Layer; at most 3 aliens at once
 export const MAX_GAME_MS = 6 * 3600 * 1000; // a session expires after 6 hours
 
-// Arcade initials: any three letters. No blocklist, by request; ASS is a classic.
-export const initialsOk = (s) => typeof s === 'string' && /^[A-Z]{3}$/.test(s);
+// Arcade initials: any three letters except slurs and hate initials.
+// Rude is fine (ASS is a classic); hateful is not.
+const BLOCKED = new Set(['FAG', 'KKK', 'KYK', 'NAZ', 'NGA', 'NGR', 'NIG']);
+export const initialsOk = (s) => typeof s === 'string' && /^[A-Z]{3}$/.test(s) && !BLOCKED.has(s);
 
 // The UTC day a score belongs to, as YYYY-MM-DD.
 export const dayKey = (ms) => new Date(ms).toISOString().slice(0, 10);
