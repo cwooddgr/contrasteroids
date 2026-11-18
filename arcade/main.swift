@@ -38,7 +38,9 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScript
         let fps = """
         (() => { let n = 0, t = performance.now();
           const tick = (now) => { n++; if (now - t >= 10000) {
-            window.webkit.messageHandlers.arcade.postMessage({ fps: Math.round(n * 1000 / (now - t)) });
+            window.webkit.messageHandlers.arcade.postMessage(window.__game
+              ? { fps: Math.round(n * 1000 / (now - t)), mode: window.__game.mode }
+              : { error: 'game not running (bundle failed to load?)' });
             n = 0; t = now; } requestAnimationFrame(tick); };
           requestAnimationFrame(tick); })();
         """
@@ -97,7 +99,9 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScript
     }
 
     func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
-        if let body = m.body as? [String: Any], let fps = body["fps"] { log.notice("fps \(String(describing: fps), privacy: .public)") }
+        guard let body = m.body as? [String: Any] else { return }
+        if let err = body["error"] { log.error("\(String(describing: err), privacy: .public)") }
+        if let fps = body["fps"] { log.notice("fps \(String(describing: fps), privacy: .public) in \(String(describing: body["mode"] ?? "?"), privacy: .public)") }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }
