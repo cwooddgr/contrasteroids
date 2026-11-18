@@ -4,7 +4,7 @@ import {
   makeRockMesh, makeShip, makeSkiff, makeLayer, makeHunter, makeMine,
   DEBRIS_GEOMS, WHITE_SMOOTH, SELF_LIT, BULLET_GEOM, ENEMY_BULLET_GEOM, styleShip,
 } from './geometry.js';
-import { POINTS, waveRocks, initialsOk } from './scoring.js';
+import { POINTS, waveRocks } from './scoring.js';
 import { ARCADE } from './input.js';
 import { Scores, newKills } from './scores.js';
 
@@ -273,7 +273,7 @@ export class Game {
     let saved = 'AAA';
     try { saved = localStorage.getItem(INITIALS_KEY) || saved; } catch { /* storage unavailable */ }
     if (!/^[A-Z]{3}$/.test(saved)) saved = 'AAA';
-    this.entry = { letters: saved.split(''), pos: 0, bad: false, repeat: 0 };
+    this.entry = { letters: saved.split(''), pos: 0, repeat: 0 };
     this.mode = 'initials';
   }
 
@@ -284,7 +284,6 @@ export class Game {
     const step = (d) => {
       const i = ALPHABET.indexOf(e.letters[e.pos]);
       e.letters[e.pos] = ALPHABET[(i + d + 26) % 26];
-      e.bad = false;
     };
     const next = inp.held('ArrowRight', 'ArrowUp'), prev = inp.held('ArrowLeft', 'ArrowDown');
     if (inp.pressed('ArrowRight', 'ArrowUp')) { step(1); e.repeat = 0.4; }
@@ -297,7 +296,6 @@ export class Game {
       const m = /^Key([A-Z])$/.exec(code);
       if (m) {
         e.letters[e.pos] = m[1];
-        e.bad = false;
         if (e.pos < 2) e.pos++;
       }
     }
@@ -306,7 +304,6 @@ export class Game {
     if (inp.pressed('Space', 'Enter', 'NumpadEnter')) {
       if (e.pos < 2) { e.pos++; return; }
       const initials = e.letters.join('');
-      if (!initialsOk(initials)) { e.bad = true; return; }
       try { localStorage.setItem(INITIALS_KEY, initials); } catch { /* storage unavailable */ }
       this.saveScore(initials);
     }
@@ -927,7 +924,7 @@ export class Game {
     const key = [
       this.mode, this.difficulty, this.score, this.hi, this.lives, this.paused,
       this.net.version, this.netStatus, this.boardPanel(), this.myEntry?.id,
-      this.mode === 'initials' && `${this.entry.letters.join('')}${this.entry.pos}${this.entry.bad}`,
+      this.mode === 'initials' && `${this.entry.letters.join('')}${this.entry.pos}`,
       this.dev && [this.r.coneDeg, this.r.spotRange, this.r.haloRange, this.r.lightAzimuth, this.r.lightElevation].map(Math.round).join(), this.bannerTimer > 0 && this.banner, blinkOn, this.touch,
     ].join('|');
     if (key === this.hudKey && !this.r.hudDirty) return;
@@ -1003,9 +1000,8 @@ export class Game {
           text(l, x, h * 0.43, k * 8, 'center');
           if (i === e.pos && blinkOn) c.fillRect(x - k * 2.8, h * 0.43 + k * 9.5, k * 5.6, k * 0.8);
         });
-        const help = e.bad ? 'PICK DIFFERENT INITIALS'
-          : this.touch || ARCADE ? 'ARROWS CHANGE THE LETTER   FIRE LOCKS IT IN'
-            : 'TYPE OR USE THE ARROWS   ENTER TO SAVE   ESC TO SKIP';
+        const help = this.touch || ARCADE ? 'ARROWS CHANGE THE LETTER   FIRE LOCKS IT IN'
+          : 'TYPE OR USE THE ARROWS   ENTER TO SAVE   ESC TO SKIP';
         text(help, w / 2, h * 0.6, k * 2.2, 'center', k * 0.2);
       } else if (this.mode === 'gameover') {
         const y0 = board ? 0.22 : 0.4;

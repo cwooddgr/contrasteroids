@@ -45,7 +45,7 @@ test('initials', () => {
   assert.ok(initialsOk('ABC'));
   assert.ok(!initialsOk('AB'));
   assert.ok(!initialsOk('abc'));
-  assert.ok(!initialsOk('KKK'));
+  assert.ok(initialsOk('ASS'));
   assert.ok(!initialsOk(123));
 });
 

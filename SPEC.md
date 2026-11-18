@@ -78,7 +78,7 @@ Implementation (proposed): the rock and alien materials compute lit or unlit per
 > **Status:** decided-by-user for the choices marked (U); proposed-by-agent for everything else
 
 - Daily and all-time top tens (U), separate for Easy and Hard (proposed). The day turns over at midnight UTC (U).
-- Three-letter arcade initials, A to Z, with a short blocklist (U). Entry appears at game over only if the score would make today's board (anything on the all-time board also makes today's).
+- Three-letter arcade initials, A to Z, any combination (U; the blocklist was dropped 2026-11-18 after Charlie: "don't reject any initials"). Entry appears at game over only if the score would make today's board (anything on the all-time board also makes today's).
 - Anti-cheat is plausibility checks, not replay (U, chosen over server-side replay of seeded inputs). The server starts the clock at `/start`, allows one submission per session, requires the score to equal the sum of the kill counts, and bounds the kills by physical limits for the elapsed time and the reached wave (`checkRun` in `src/scoring.js`). Limits are set so a real game never fails. A patient cheater can pass them, so `DELETE /scores/:id` with the admin token removes entries.
 - The playfield still varies with screen shape (U, kept as is), so wide screens have an edge.
 - Cloudflare Worker and D1 at `scores.dgrlabs.co`, matching our other Workers (proposed). IPs are stored only as salted hashes, for a limit of 120 games started per hour per IP.
