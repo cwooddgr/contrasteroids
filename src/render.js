@@ -162,6 +162,23 @@ export class Renderer {
     this.buildStars();
   }
 
+  // Quality knobs for slow GPUs (the arcade iMac's Intel HD 6000), set from
+  // the URL (?shadow=2048&msaa=0&scale=0.75, see quality.js) or by ?bench.
+  // shadowSize is the sun's map; the spotlight's is half of it.
+  setQuality({ shadowSize, msaa, scale, shadows } = {}) {
+    if (shadowSize) {
+      this.sun.shadow.mapSize.set(shadowSize, shadowSize);
+      this.spot.shadow.mapSize.set(shadowSize / 2, shadowSize / 2);
+      for (const l of [this.sun, this.spot]) { l.shadow.map?.dispose(); l.shadow.map = null; }
+    }
+    if (msaa !== undefined) { this.target.samples = msaa; this.target.dispose(); }
+    if (shadows !== undefined && shadows !== this.renderer.shadowMap.enabled) {
+      this.renderer.shadowMap.enabled = shadows;
+      this.scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
+    }
+    if (scale) { this.renderer.setPixelRatio(scale); this.resize(); }
+  }
+
   resize() {
     const w = window.innerWidth;
     const h = window.innerHeight;

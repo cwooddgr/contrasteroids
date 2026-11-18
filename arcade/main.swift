@@ -100,6 +100,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScript
 
     func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
         guard let body = m.body as? [String: Any] else { return }
+        if let msg = body["log"] { log.notice("\(String(describing: msg), privacy: .public)") }
         if let err = body["error"] { log.error("\(String(describing: err), privacy: .public)") }
         if let fps = body["fps"] { log.notice("fps \(String(describing: fps), privacy: .public) in \(String(describing: body["mode"] ?? "?"), privacy: .public)") }
     }

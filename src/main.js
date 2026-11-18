@@ -4,10 +4,12 @@ import { Sound } from './audio.js';
 import { Input } from './input.js';
 import { Game } from './game.js';
 import { Touch } from './touch.js';
+import { urlQuality, maybeBench } from './quality.js';
 
 const STEP = 1 / 120;
 
 const renderer = new Renderer(document.getElementById('app'));
+renderer.setQuality(urlQuality());
 const sound = new Sound();
 const input = new Input(() => sound.unlock());
 const game = new Game(renderer, sound, input);
@@ -37,6 +39,7 @@ requestAnimationFrame(frame);
 
 // For debugging from the console.
 window.__game = game;
+maybeBench(game, renderer);
 
 // The HUD is drawn to a canvas, which can't wait for a web font; redraw it
 // once Audiowide has loaded.
