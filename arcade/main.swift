@@ -8,6 +8,9 @@
 
 import Cocoa
 import WebKit
+import os
+
+let log = Logger(subsystem: "co.dgrlabs.contrasteroids-arcade", category: "app")
 
 let defaultURL = "https://dgrlabs.co/contrasteroids/?arcade"
 let idleQuit: TimeInterval = 300
@@ -25,12 +28,13 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScript
 
     func applicationDidFinishLaunching(_ note: Notification) {
         let address = UserDefaults.standard.string(forKey: "url") ?? defaultURL
-        guard let u = URL(string: address) else { NSLog("Contrasteroids: bad url %@", address); exit(1) }
+        guard let u = URL(string: address) else { log.error("bad url \(address, privacy: .public)"); exit(1) }
         url = u
 
         let config = WKWebViewConfiguration()
         config.mediaTypesRequiringUserActionForPlayback = []
-        // Frame rate to the log every 10 s: `log stream --predicate 'process == "Contrasteroids"'`.
+        // Frame rate to the unified log every 10 s:
+        // `/usr/bin/log show --last 5m --predicate 'subsystem == "co.dgrlabs.contrasteroids-arcade"'` (zsh has its own `log` builtin).
         let fps = """
         (() => { let n = 0, t = performance.now();
           const tick = (now) => { n++; if (now - t >= 10000) {
@@ -68,7 +72,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScript
         Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
             guard let self else { return }
             if Date().timeIntervalSince(self.lastInput) > idleQuit {
-                NSLog("Contrasteroids: idle, quitting")
+                log.notice("idle, quitting")
                 NSApp.terminate(nil)
             }
         }
@@ -79,7 +83,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScript
     func webView(_ w: WKWebView, didFailProvisionalNavigation n: WKNavigation!, withError err: Error) { retry(err) }
     func webView(_ w: WKWebView, didFail n: WKNavigation!, withError err: Error) { retry(err) }
     func retry(_ err: Error) {
-        NSLog("Contrasteroids: load failed (%@), retrying", err.localizedDescription)
+        log.error("load failed (\(err.localizedDescription, privacy: .public)), retrying")
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
             guard let self else { return }
             self.web.load(URLRequest(url: self.url))
@@ -88,12 +92,12 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKScript
 
     // WebKit's content process can die (GPU reset, memory); reload rather than sit blank.
     func webViewWebContentProcessDidTerminate(_ w: WKWebView) {
-        NSLog("Contrasteroids: web content process ended, reloading")
+        log.error("web content process ended, reloading")
         w.load(URLRequest(url: url))
     }
 
     func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
-        if let body = m.body as? [String: Any], let fps = body["fps"] { NSLog("Contrasteroids: fps %@", "\(fps)") }
+        if let body = m.body as? [String: Any], let fps = body["fps"] { log.notice("fps \(String(describing: fps), privacy: .public)") }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }
