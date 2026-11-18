@@ -3,14 +3,15 @@ const BLOCK = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space
 
 // ?arcade is set by the cabinet wrapper (arcade/). The panel's encoder sends
 // LCtrl for button 1, LAlt for button 2, and 1 for P1 Start, so those stand in
-// for fire, hyperspace, and Enter. Buttons 5 to 8 (Z, X, C, 5) and button 3
-// (Space) give button-only play laid out like the cabinet's Asteroids: C and 5
-// rotate, Z thrusts, X fires, Space is hyperspace. Left off on the web, where
-// Ctrl and Alt are browser shortcuts and Space fires.
+// for fire, hyperspace, and Enter. Buttons 5 to 8 (Z, X, C, 5) give
+// button-only play laid out like the cabinet's Asteroids: C and 5 rotate, Z
+// thrusts, X fires. Button 3 (Space) fires as usual; Charlie wanted that over
+// Asteroids' Space-for-hyperspace. Left off on the web, where Ctrl and Alt are
+// browser shortcuts.
 export const ARCADE = new URLSearchParams(location.search).has('arcade');
 const ALIAS = ARCADE ? {
   ControlLeft: 'Space', AltLeft: 'ShiftLeft', Digit1: 'Enter',
-  KeyC: 'ArrowLeft', Digit5: 'ArrowRight', KeyZ: 'ArrowUp', KeyX: 'Space', Space: 'ShiftLeft',
+  KeyC: 'ArrowLeft', Digit5: 'ArrowRight', KeyZ: 'ArrowUp', KeyX: 'Space',
 } : {};
 const code = (e) => ALIAS[e.code] || e.code;
 
