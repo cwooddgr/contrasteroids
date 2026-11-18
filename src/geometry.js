@@ -272,7 +272,7 @@ export function makeShip() {
   group.userData.flame = flame;
   group.userData.glow = makeGlow(7, 0.5);
   group.add(group.userData.glow);
-  group.userData.beam = makeBeam(16, 0.45);
+  group.userData.beam = makeBeam(5, 0.45);
   group.userData.beam.position.set(2.8, 0, -1.5); // the spotlight's origin, under the hull
   group.add(group.userData.beam);
   group.userData.player = true;
