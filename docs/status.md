@@ -33,3 +33,13 @@ Later on 2026-11-18 (status line before this entry: on the arcade iMac at 60 fps
 - Fixed new rocks and aliens drawing for one frame at the origin, beside a freshly spawned ship (f01f677; published as dgrlabs_co d493c0b). Checked in headless Chrome: mesh positions were (0, 0) before the fix and matched the logical position after.
 - Rocks now pass in front of the title text, and in Hard a short spotlight fan shows at the ship's nose (b5c4e4f, shortened in c3300ed). Published as dgrlabs_co d26b57a; the live page serves the new bundle.
 - puppeteer-core is now a dev dependency (075fcaa).
+
+## 2026-11-18 (later)
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-18
+> **Status:** decided-by-user
+
+Previous status line: "2026-11-18: live at https://dgrlabs.co/contrasteroids/ (dgrlabs_co d26b57a) with online boards, rocks over the title text, and the Hard spotlight fan; also on the house arcade iMac via `arcade/`."
+
+Initials blocklist cut from 24 entries to 7 slurs and hate initials (FAG, KKK, KYK, NAZ, NGA, NGR, NIG), so rude initials like ASS are allowed. Charlie: "don't reject any initials", then chose to keep blocking just those seven. Worker redeployed (version b066fd4c) and site published (dgrlabs_co 20bfcff).
