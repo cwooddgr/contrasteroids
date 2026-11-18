@@ -244,6 +244,9 @@ export class Game {
       }
     }
 
+    // On the title screen the rocks drift over the text, so their dark sides
+    // show off the hard shadows before anyone starts playing.
+    this.r.setHudUnder(this.mode === 'title');
     this.updateRocks(dt);
     this.collideRocks();
     this.updateBullets(this.bullets, dt);
@@ -352,6 +355,14 @@ export class Game {
     r.applyLightTuning();
   }
 
+  // The fan drawn under the ship's nose follows the spotlight: Hard only,
+  // and the same cone width, which dev mode can change.
+  showBeam(on) {
+    const beam = this.ship.userData.beam;
+    beam.visible = on && this.difficulty === 'hard';
+    beam.material.uniforms.uHalf.value = THREE.MathUtils.degToRad(this.r.coneDeg / 2);
+  }
+
   // Hard mode's lights live on the ship. On the hard title screen a parked
   // ship slowly turns so its beam sweeps the rocks.
   updateLights(dt) {
@@ -364,10 +375,12 @@ export class Game {
       this.ship.position.set(0, -8, 0);
       this.ship.rotation.set(0, 0, p.angle);
       this.r.shipLights(0, -8, p.angle, true);
+      this.showBeam(true);
     } else {
       const on = this.mode === 'play' && p.alive && p.hyper <= 0;
       if (this.mode !== 'play') this.ship.visible = false;
       this.r.shipLights(p.x, p.y, p.angle, on);
+      this.showBeam(on);
     }
     this.r.bulletLightsFor(this.bullets);
     this.r.alienLightsFor(this.aliens);

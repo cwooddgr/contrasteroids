@@ -138,7 +138,7 @@ export const DEBRIS_GEOMS = Array.from({ length: 10 }, (_, i) => makeRockGeometr
 
 function finish(obj) {
   obj.traverse((o) => {
-    if (o.isMesh && o.material !== SELF_LIT) {
+    if (o.isMesh && o.material !== SELF_LIT && !o.userData.isBeam) {
       o.castShadow = true;
       o.receiveShadow = true;
     }
@@ -153,7 +153,7 @@ export function styleShip(obj, mode) {
   const hard = mode === 'hard';
   const player = obj.userData.player;
   obj.traverse((o) => {
-    if (!o.isMesh || o.material === SELF_LIT && !o.userData.base) return;
+    if (!o.isMesh || o.userData.isBeam || o.material === SELF_LIT && !o.userData.base) return;
     o.userData.base ??= o.material;
     const base = o.userData.base;
     o.material = !hard ? base : player ? SELF_LIT : base === WHITE_FLAT ? SHIP_FLAT : SHIP_SMOOTH;
@@ -193,6 +193,43 @@ export function makeGlow(radius, strength) {
 // Easy: a sharp center ridge with steep flanks; under the sun one flank is lit
 // and the other black, and they swap as the ship turns. The fin and engine
 // pods cast shadows on the hull. Hard: pure white (see styleShip).
+// Hard mode: a short fan of light from the nose, matching the spotlight's
+// cone (uHalf is half its width, kept in sync by Game.updateLights), so the
+// beam visibly starts at the ship. Additive with a hard angular edge like the
+// light's (no penumbra), fading out over radius. It never writes alpha, so it
+// can't hide title text (see the post pass's uHudUnder).
+export function makeBeam(radius, strength) {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uHalf: { value: 0.4 }, uStrength: { value: strength } },
+    vertexShader: /* glsl */ `
+      varying vec2 vP;
+      void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
+      uniform float uHalf;
+      uniform float uStrength;
+      varying vec2 vP;
+      void main() {
+        float d = length(vP);
+        if (d > 1.0 || abs(atan(vP.y, vP.x)) > uHalf) discard;
+        float f = 1.0 - d;
+        gl_FragColor = vec4(vec3(uStrength * f * f), 1.0);
+      }`,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.CustomBlending,
+    blendEquation: THREE.AddEquation,
+    blendSrc: THREE.OneFactor,
+    blendDst: THREE.OneFactor,
+    blendSrcAlpha: THREE.ZeroFactor,
+    blendDstAlpha: THREE.OneFactor,
+  });
+  const beam = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+  beam.scale.setScalar(radius);
+  beam.visible = false;
+  beam.userData.isBeam = true; // styleShip and finish leave it alone
+  return beam;
+}
+
 export function makeShip() {
   const group = new THREE.Group();
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -235,6 +272,9 @@ export function makeShip() {
   group.userData.flame = flame;
   group.userData.glow = makeGlow(7, 0.5);
   group.add(group.userData.glow);
+  group.userData.beam = makeBeam(16, 0.45);
+  group.userData.beam.position.set(2.8, 0, -1.5); // the spotlight's origin, under the hull
+  group.add(group.userData.beam);
   group.userData.player = true;
   return finish(group);
 }

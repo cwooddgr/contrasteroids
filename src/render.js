@@ -16,19 +16,25 @@ void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
 // Hard: lights are scaled so a fully lit surface comes out at 1.0, and the
 // falloff with distance shows as grey. Tiny values go to black so nothing
 // glows faintly by accident. Easy (uBinary = 1): anything lit is white.
-// The HUD stays pure black and white and is ORed in.
+// The HUD stays pure black and white and is ORed in. With uHudUnder = 1
+// (the title screen) it goes behind anything solid: the scene clears to
+// alpha 0 and the stars write alpha 0, so alpha marks rock, ship, and debris
+// pixels, and there the scene wins, dark sides and all.
 const THRESHOLD_FS = /* glsl */ `
 uniform sampler2D tScene;
 uniform sampler2D tHud;
 uniform float uThreshold;
 uniform float uBinary;
+uniform float uHudUnder;
 varying vec2 vUv;
 void main() {
-  vec3 c = texture2D(tScene, vUv).rgb;
+  vec4 s = texture2D(tScene, vUv);
+  vec3 c = s.rgb;
   float lum = min(1.0, max(c.r, max(c.g, c.b)));
   float lit = step(uThreshold, lum);
   float v = mix(lum * lit, lit, uBinary);
-  v = max(v, step(0.5, texture2D(tHud, vUv).a));
+  float covered = uHudUnder * step(0.5, s.a);
+  v = max(v, step(0.5, texture2D(tHud, vUv).a) * (1.0 - covered));
   gl_FragColor = vec4(vec3(v), 1.0);
 }
 `;
@@ -43,7 +49,9 @@ export class Renderer {
     container.appendChild(this.renderer.domElement);
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x000000);
+    // No background: clear to transparent black so the target's alpha says
+    // where solid objects are (see uHudUnder).
+    this.renderer.setClearColor(0x000000, 0);
 
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 400);
     this.camera.position.set(0, 0, 150);
@@ -133,6 +141,7 @@ export class Renderer {
         tHud: { value: this.hudTexture },
         uThreshold: { value: 0.02 },
         uBinary: { value: 1 },
+        uHudUnder: { value: 0 },
       },
       depthTest: false,
       depthWrite: false,
@@ -332,7 +341,7 @@ export class Renderer {
         }`,
       fragmentShader: /* glsl */ `
         varying float vB;
-        void main() { gl_FragColor = vec4(vec3(vB), 1.0); }`,
+        void main() { gl_FragColor = vec4(vec3(vB), 0.0); } // alpha 0: not solid`,
     }));
     this.scene.add(this.stars);
   }
@@ -362,6 +371,9 @@ export class Renderer {
       }
     }
   }
+
+  // Draw the HUD behind solid objects instead of over them.
+  setHudUnder(on) { this.post.uniforms.uHudUnder.value = on ? 1 : 0; }
 
   render() {
     this.renderer.setRenderTarget(this.target);
