@@ -91,3 +91,10 @@
 - `arcade/` is a Swift WKWebView app (system WebKit, universal, macOS 12+), not Electron, to stay small on the iMac's hard drive. It loads the live site with `?arcade` rather than bundling a build, so game updates reach the cabinet with each site publish and online scores keep the dgrlabs.co origin. Without a network it retries on a black screen.
 - `?arcade` maps LCtrl to fire, LAlt to hyperspace, and `1` to Enter, and swaps the on-screen hints for panel wording. It is off on the web, where Ctrl and Alt are browser shortcuts.
 - The app quits on the middle mouse button (the X-Arcade's red button) and after five minutes without input, so the frontend's attract mode returns. It logs the frame rate every 10 s for tuning.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-18
+> **Status:** proposed-by-agent
+
+- The iMac's system WebKit (macOS 12) can't parse class static blocks, which three.js uses, so the site now builds for `['es2020', 'safari15']`. The house session found this.
+- The cabinet runs at `shadow=2048&msaa=0&scale=0.75`, the wrapper's default URL. In the iMac's `?bench` run with ES-DE behind it, full quality managed 33 fps in Easy and 39 in Hard on the title screen. MSAA was the largest single cost, and this cut held 60 in both modes. I picked it over `scale=0.5` because that also held 60 but looks blockier. Headroom during play is unmeasured.

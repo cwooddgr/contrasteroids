@@ -12,7 +12,9 @@ import os
 
 let log = Logger(subsystem: "co.dgrlabs.contrasteroids-arcade", category: "app")
 
-let defaultURL = "https://dgrlabs.co/contrasteroids/?arcade"
+// Quality cut from the ?bench run on the arcade iMac (Intel HD 6000, 1080p) with
+// ES-DE running behind: these hold 60 fps in both modes on the title screen.
+let defaultURL = "https://dgrlabs.co/contrasteroids/?arcade&shadow=2048&msaa=0&scale=0.75"
 let idleQuit: TimeInterval = 300
 
 final class KeyWindow: NSWindow {
