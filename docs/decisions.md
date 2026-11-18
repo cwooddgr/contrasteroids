@@ -98,3 +98,10 @@
 
 - The iMac's system WebKit (macOS 12) can't parse class static blocks, which three.js uses, so the site now builds for `['es2020', 'safari15']`. The house session found this.
 - The cabinet runs at `shadow=2048&msaa=0&scale=0.75`, the wrapper's default URL. In the iMac's `?bench` run with ES-DE behind it, full quality managed 33 fps in Easy and 39 in Hard on the title screen. MSAA was the largest single cost, and this cut held 60 in both modes. I picked it over `scale=0.5` because that also held 60 but looks blockier. Headroom during play is unmeasured.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-18
+> **Status:** decided-by-user
+
+- Cabinet buttons (`?arcade`), relayed from the cabinet by the house session as Charlie's final map, matching his MAME Asteroids: bottom two buttons (C, 5) rotate, middle center (Z) thrusts, middle right (X) fires, top right (Space) is hyperspace. The stick stays as it was. He asked that it not collide with the web keys, and it doesn't: the remap applies only with `?arcade`.
+- I kept LCtrl as fire and LAlt/LShift as hyperspace, as harmless extras on buttons he didn't assign (proposed-by-agent).
