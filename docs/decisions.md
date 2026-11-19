@@ -121,3 +121,15 @@
 - I chose Chromium's kiosk mode (Debian's package) over a WebKitGTK wrapper for its WebGL on Intel Mesa, with a standard-library Python launcher, `arcade/linux/contrasteroids-arcade`. The launcher reads Esc, the middle mouse button, and idle time from `/dev/input` itself (the arcade user is in the `input` group), because a page can't close a kiosk window and nothing can intercept X input without a window manager.
 - With no window manager, `--kiosk` leaves a small window at 10,10, so the launcher sizes it to the screen from `xrandr`. The window covers the screen in black and `frame.html` boxes the game in a centered 3:4 iframe, which keeps the dgrlabs.co origin (scores, local storage) and needs no change to the site. A transparent shield over the iframe hides the pointer and keeps clicks from moving keyboard focus. The launcher also parks the pointer in the bottom corner with xdotool, since Chromium hides it only after it moves.
 - mame-pc's HD 630 held 60 fps at every `?bench` setting in portrait, so the cabinet runs at full quality (plain `?arcade`), unlike the iMac's cut.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-19
+> **Status:** decided-by-user
+
+- Charlie asked for Contrasteroids marquee art for mame-pc (relayed by mame-imac: "you can tell the contrasteroids session to create marquee art"), shown in the 1080x240 strip above the game like the cabinet's MAME marquees, with the bottom strip left black.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-19
+> **Status:** proposed-by-agent
+
+- I rendered the marquee from the game itself (`docs/marquee-capture.mjs`): the Easy sun on real rocks, with the camera zoomed 2.5x so they read at sign size, and the title in Audiowide. A soft glow and a slight darkening toward the ends make it look backlit. The rocks are kept off the letters so the title reads from a distance. I left out the trim-line variant (c). `frame.html` places the marquee directly above the 3:4 box at the box's width.
