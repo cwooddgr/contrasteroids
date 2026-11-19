@@ -43,3 +43,12 @@ Later on 2026-11-18 (status line before this entry: on the arcade iMac at 60 fps
 Previous status line: "2026-11-18: live at https://dgrlabs.co/contrasteroids/ (dgrlabs_co d26b57a) with online boards, rocks over the title text, and the Hard spotlight fan; also on the house arcade iMac via `arcade/`."
 
 Initials blocklist cut from 24 entries to 7 slurs and hate initials (FAG, KKK, KYK, NAZ, NGA, NGR, NIG), so rude initials like ASS are allowed. Charlie: "don't reject any initials", then chose to keep blocking just those seven. Worker redeployed (version b066fd4c) and site published (dgrlabs_co 20bfcff).
+
+## 2026-11-19
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-19
+> **Status:** proposed-by-agent
+
+- Previous status line (2026-11-18): live at https://dgrlabs.co/contrasteroids/ (dgrlabs_co 20bfcff) with online boards (rude initials allowed, slurs blocked), rocks over the title text, and the Hard spotlight fan; also on the house arcade iMac via `arcade/`.
+- Built `arcade/linux/` for the new portrait cabinet, mame-pc, at the mame-imac session's request, and installed it there. Checked on the cabinet with a fake uinput panel: P1 Start begins a game, Esc and the middle mouse button quit back to ES-DE, audio opens through PipeWire, and the game is boxed to 1080x1440 at y 240. A `?bench` run held 60 fps at every setting, so it runs at full quality. The five-minute idle quit is untested there, and so is the real TankStick.

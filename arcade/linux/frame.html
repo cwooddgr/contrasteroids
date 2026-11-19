@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Contrasteroids</title>
+<style>
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+/* 3:4, as large as fits, centered: 1080x1440 at y 240 on the portrait cabinet. */
+#box { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(100vw, 75vh); height: min(133.333vw, 100vh); }
+iframe { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+/* Covers the game so the pointer is hidden there too and a stray click can't
+   pull keyboard focus away from it. */
+#shield { position: fixed; inset: 0; cursor: none; }
+</style>
+<div id="box"><iframe id="game" allow="autoplay; fullscreen"></iframe></div>
+<div id="shield"></div>
+<script>
+// The launcher passes the game's address after the #. Black until the site
+// answers, then the game, with keyboard focus inside it.
+const target = decodeURIComponent(location.hash.slice(1));
+const game = document.getElementById('game');
+game.addEventListener('load', () => game.focus());
+const attempt = () => fetch(target, { mode: 'no-cors', cache: 'no-store' })
+  .then(() => { game.src = target; })
+  .catch(() => { console.log('site unreachable, retrying'); setTimeout(attempt, 3000); });
+attempt();
+</script>

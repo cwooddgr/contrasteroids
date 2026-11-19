@@ -1,0 +1,195 @@
+#!/usr/bin/python3
+"""Contrasteroids for the Linux arcade cabinet (mame-pc): the live site in
+Chromium's kiosk mode, played from a panel whose encoder sends keystrokes.
+
+The window covers the screen in black and boxes the game to 3:4, centered,
+to match the cabinet's MAME games (1080x1440 on the 1080x1920 portrait
+screen; frame.html). Loads the site with ?arcade, which maps the panel's buttons (src/input.js).
+Quits on Esc, the middle mouse button (the panel's red "exit" button), or five
+minutes without a key or button press, so the frontend's attract mode comes
+back. Blocks until Chromium is gone, so ES-DE waits on it.
+
+The quit buttons and idle time are read straight from /dev/input (the user
+must be in the `input` group), so they work whatever window X thinks has
+focus. Override the page with CONTRASTEROIDS_URL=<address>. The last run's log
+is ~/.local/state/contrasteroids-arcade/last-run.log, including the page's
+console (a ?bench run reports there).
+
+Standard library only. Needs chromium; install with install.sh.
+"""
+
+import glob
+import json
+import os
+import select
+import shutil
+import signal
+import struct
+import subprocess
+import sys
+import time
+import urllib.parse
+
+# Full quality: mame-pc's HD 630 held 60 fps at every ?bench setting.
+DEFAULT_URL = "https://dgrlabs.co/contrasteroids/?arcade"
+IDLE_QUIT = 300  # seconds
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+HOME = os.path.expanduser("~")
+STATE = os.path.join(HOME, ".local/state/contrasteroids-arcade")
+PROFILE = os.path.join(HOME, ".local/share/contrasteroids-arcade/chromium")
+
+# struct input_event on 64-bit Linux: timeval (two longs), type, code, value.
+EVENT = struct.Struct("llHHi")
+EV_KEY = 1
+KEY_ESC = 1
+BTN_MIDDLE = 0x112
+
+os.makedirs(STATE, exist_ok=True)
+logfile = open(os.path.join(STATE, "last-run.log"), "w", buffering=1)
+
+
+def log(msg):
+    logfile.write(time.strftime("%H:%M:%S ") + msg + "\n")
+
+
+def open_inputs():
+    fds = []
+    for path in sorted(glob.glob("/dev/input/event*")):
+        try:
+            fds.append(os.open(path, os.O_RDONLY | os.O_NONBLOCK))
+        except OSError as e:
+            log(f"can't read {path}: {e.strerror}")
+    if not fds:
+        log("no readable input devices; is this user in the input group? Esc and the red button won't quit")
+    return fds
+
+
+def mark_clean_exit():
+    # A killed Chromium offers to restore its last session; tell it the last
+    # run ended normally.
+    prefs = os.path.join(PROFILE, "Default", "Preferences")
+    try:
+        with open(prefs) as f:
+            p = json.load(f)
+        p.setdefault("profile", {})["exit_type"] = "Normal"
+        p["profile"]["exited_cleanly"] = True
+        with open(prefs, "w") as f:
+            json.dump(p, f)
+    except (OSError, ValueError):
+        pass
+
+
+def screen_size():
+    # With no window manager, --kiosk alone leaves a small window at 10,10, so
+    # size the window to the (possibly rotated) X screen ourselves.
+    try:
+        out = subprocess.run(["xrandr", "--current"], capture_output=True, text=True).stdout
+        cur = out.split("current ", 1)[1].split(",", 1)[0]
+        w, h = (int(n) for n in cur.split(" x "))
+        return w, h
+    except (OSError, IndexError, ValueError):
+        log("couldn't read the screen size from xrandr; assuming portrait 1080x1920")
+        return 1080, 1920
+
+
+def chromium_binary():
+    for name in ("chromium", "chromium-browser", "google-chrome"):
+        path = shutil.which(name)
+        if path:
+            return path
+    log("chromium not found")
+    sys.exit(1)
+
+
+def main():
+    url = os.environ.get("CONTRASTEROIDS_URL", DEFAULT_URL)
+    # ES-DE passes this; without it (sudo -u, ssh) Chromium can't find PipeWire.
+    os.environ.setdefault("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    # A black full-screen page that boxes the game to 3:4 like the cabinet's
+    # MAME games, once the network answers.
+    start = "file://" + os.path.join(HERE, "frame.html") + "#" + urllib.parse.quote(url, safe="")
+    os.makedirs(PROFILE, exist_ok=True)
+    mark_clean_exit()
+
+    # Chromium hides the pointer only once it moves, so park it in the bottom
+    # corner, behind the cabinet's control panel.
+    w, h = screen_size()
+    if shutil.which("xdotool"):
+        subprocess.run(["xdotool", "mousemove", str(w - 1), str(h - 1)])
+
+    args = [
+        chromium_binary(),
+        "--kiosk",
+        "--window-position=0,0",
+        f"--window-size={w},{h}",
+        "--user-data-dir=" + PROFILE,
+        "--ozone-platform=x11",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--noerrdialogs",
+        "--disable-session-crashed-bubble",
+        "--disable-infobars",
+        "--disable-features=Translate,TranslateUI,MediaRouter",
+        "--disable-pinch",
+        "--overscroll-history-navigation=0",
+        "--autoplay-policy=no-user-gesture-required",
+        "--password-store=basic",
+        "--hide-scrollbars",
+        "--enable-logging=stderr",
+        "--v=0",
+        start,
+    ]
+    log("launching " + url)
+    proc = subprocess.Popen(args, stdout=logfile, stderr=logfile, stdin=subprocess.DEVNULL,
+                            start_new_session=True)
+
+    def stop(reason):
+        log("quitting: " + reason)
+        try:
+            os.killpg(proc.pid, signal.SIGTERM)
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait()
+        except ProcessLookupError:
+            pass
+
+    signal.signal(signal.SIGTERM, lambda *_: (stop("SIGTERM"), sys.exit(0)))
+    signal.signal(signal.SIGINT, lambda *_: (stop("SIGINT"), sys.exit(0)))
+
+    fds = open_inputs()
+    last_input = time.monotonic()
+    while proc.poll() is None:
+        ready, _, _ = select.select(fds, [], [], 1.0)
+        quit_reason = None
+        for fd in ready:
+            try:
+                data = os.read(fd, EVENT.size * 64)
+            except BlockingIOError:
+                continue
+            except OSError:  # unplugged
+                fds.remove(fd)
+                os.close(fd)
+                continue
+            for i in range(0, len(data) - EVENT.size + 1, EVENT.size):
+                _, _, etype, code, value = EVENT.unpack_from(data, i)
+                if etype != EV_KEY:
+                    continue
+                last_input = time.monotonic()
+                if value == 1 and code == KEY_ESC:
+                    quit_reason = "Esc"
+                elif value == 1 and code == BTN_MIDDLE:
+                    quit_reason = "red button (middle mouse)"
+        if quit_reason is None and time.monotonic() - last_input > IDLE_QUIT:
+            quit_reason = f"idle {IDLE_QUIT} s"
+        if quit_reason:
+            stop(quit_reason)
+            break
+    else:
+        log(f"chromium exited by itself ({proc.returncode})")
+    mark_clean_exit()
+
+
+if __name__ == "__main__":
+    main()

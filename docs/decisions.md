@@ -105,3 +105,19 @@
 
 - Cabinet buttons (`?arcade`), relayed from the cabinet by the house session as Charlie's final map, matching his MAME Asteroids: bottom two buttons (C, 5) rotate, middle center (Z) thrusts, middle right (X) fires, top right (Space) is hyperspace. The stick stays as it was. He asked that it not collide with the web keys, and it doesn't: the remap applies only with `?arcade`.
 - I kept LCtrl as fire and LAlt/LShift as hyperspace, as harmless extras on buttons he didn't assign (proposed-by-agent).
+
+## Linux cabinet launcher (mame-pc)
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-19
+> **Status:** decided-by-user
+
+- Charlie wanted Contrasteroids on the new portrait cabinet, mame-pc (relayed by the mame-imac session). His layout, also relayed: render at 3:4 like the cabinet's MAME games, 1080x1440 centered on the 1080x1920 screen with black bars ("centered is fine"; the bottom sits behind the TankStick).
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-19
+> **Status:** proposed-by-agent
+
+- I chose Chromium's kiosk mode (Debian's package) over a WebKitGTK wrapper for its WebGL on Intel Mesa, with a standard-library Python launcher, `arcade/linux/contrasteroids-arcade`. The launcher reads Esc, the middle mouse button, and idle time from `/dev/input` itself (the arcade user is in the `input` group), because a page can't close a kiosk window and nothing can intercept X input without a window manager.
+- With no window manager, `--kiosk` leaves a small window at 10,10, so the launcher sizes it to the screen from `xrandr`. The window covers the screen in black and `frame.html` boxes the game in a centered 3:4 iframe, which keeps the dgrlabs.co origin (scores, local storage) and needs no change to the site. A transparent shield over the iframe hides the pointer and keeps clicks from moving keyboard focus. The launcher also parks the pointer in the bottom corner with xdotool, since Chromium hides it only after it moves.
+- mame-pc's HD 630 held 60 fps at every `?bench` setting in portrait, so the cabinet runs at full quality (plain `?arcade`), unlike the iMac's cut.
