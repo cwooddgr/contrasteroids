@@ -28,4 +28,4 @@ Check game changes by running it and taking a screenshot; `window.__game` expose
 
 ## Status
 
-2026-11-18: live at https://dgrlabs.co/contrasteroids/ (dgrlabs_co 20bfcff) with online boards (rude initials allowed, slurs blocked), rocks over the title text, and the Hard spotlight fan; also on the house arcade iMac via `arcade/`, and installed on the portrait cabinet mame-pc via `arcade/linux/` (2026-11-19; TankStick not yet connected). History: `docs/status.md`.
+2026-11-19: live at https://dgrlabs.co/contrasteroids/ (dgrlabs_co 20bfcff) with online boards (rude initials allowed, slurs blocked), rocks over the title text, and the Hard spotlight fan; also on the house arcade iMac via `arcade/`, and installed on the portrait cabinet mame-pc via `arcade/linux/` (TankStick not yet connected). History: `docs/status.md`.
