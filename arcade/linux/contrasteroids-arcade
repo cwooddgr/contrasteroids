@@ -93,6 +93,27 @@ def screen_size():
         return 1080, 1920
 
 
+def restore_focus():
+    # Chromium takes X keyboard focus when its window maps. With no window
+    # manager, closing it can leave focus on None, and ES-DE then ignores
+    # every key, so hand focus back to whatever is under the pointer.
+    try:
+        import ctypes
+        x11 = ctypes.CDLL("libX11.so.6")
+        x11.XOpenDisplay.restype = ctypes.c_void_p
+        x11.XSetInputFocus.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong]
+        x11.XCloseDisplay.argtypes = [ctypes.c_void_p]
+        dpy = x11.XOpenDisplay(None)
+        if not dpy:
+            log("can't open the X display to restore focus")
+            return
+        x11.XSetInputFocus(dpy, 1, 1, 0)  # PointerRoot, RevertToPointerRoot, CurrentTime
+        x11.XCloseDisplay(dpy)  # flushes the request
+        log("focus restored to PointerRoot")
+    except OSError as e:
+        log(f"couldn't restore focus: {e}")
+
+
 def chromium_binary():
     for name in ("chromium", "chromium-browser", "google-chrome"):
         path = shutil.which(name)
@@ -155,8 +176,8 @@ def main():
         except ProcessLookupError:
             pass
 
-    signal.signal(signal.SIGTERM, lambda *_: (stop("SIGTERM"), sys.exit(0)))
-    signal.signal(signal.SIGINT, lambda *_: (stop("SIGINT"), sys.exit(0)))
+    signal.signal(signal.SIGTERM, lambda *_: (stop("SIGTERM"), restore_focus(), sys.exit(0)))
+    signal.signal(signal.SIGINT, lambda *_: (stop("SIGINT"), restore_focus(), sys.exit(0)))
 
     fds = open_inputs()
     last_input = time.monotonic()
@@ -189,6 +210,7 @@ def main():
     else:
         log(f"chromium exited by itself ({proc.returncode})")
     mark_clean_exit()
+    restore_focus()
 
 
 if __name__ == "__main__":
