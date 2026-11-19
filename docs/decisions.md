@@ -133,3 +133,15 @@
 > **Status:** proposed-by-agent
 
 - I rendered the marquee from the game itself (`docs/marquee-capture.mjs`): the Easy sun on real rocks, with the camera zoomed 2.5x so they read at sign size, and the title in Audiowide. A soft glow and a slight darkening toward the ends make it look backlit. The rocks are kept off the letters so the title reads from a distance. I left out the trim-line variant (c). `frame.html` places the marquee directly above the 3:4 box at the box's width.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-19
+> **Status:** decided-by-user
+
+- Charlie saw the black-and-white marquee on mame-pc and called it "visually confusing": it looked like the game below it, and the title showed twice. He chose a color marquee in the style of the cabinet's 1980s MAME scans (relayed by mame-imac: saturated colors, an illustrated scene, a strong title treatment).
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-19
+> **Status:** proposed-by-agent
+
+- `docs/marquee.mjs` now draws the marquee in 2D canvas, replacing the game-render capture. It shows a deep-space background, black-outlined rocks with a hard terminator (orange where lit, violet in shadow, after the game's hard light), and our ship firing at a burst. The title is in Audiowide with a yellow-to-red fill, black extrusion, and pink outline, with a DGR LABS maker's badge and a cyan and magenta trim frame.
