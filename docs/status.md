@@ -61,5 +61,5 @@ Initials blocklist cut from 24 entries to 7 slurs and hate initials (FAG, KKK, K
 > **Status:** proposed-by-agent
 
 - Previous status line (2026-11-19): live at https://dgrlabs.co/contrasteroids/ (dgrlabs_co 20bfcff) with online boards (rude initials allowed, slurs blocked), rocks over the title text, and the Hard spotlight fan; also on the house arcade iMac via `arcade/`, and installed on the portrait cabinet mame-pc via `arcade/linux/` (TankStick not yet connected).
-- Bass for the cabinets' small subwoofer: a sub layer under the death tone (`deathSub`, floored at 55 Hz) and an Asteroids-style thump an octave above each beat (`thump`). Measurements and the original thump's pitches are in `docs/decisions.md`. Published as dgrlabs_co 5e801a3; not yet heard on a cabinet.
+- Bass for the cabinets' small subwoofer: a sub layer under the death tone (`deathSub`, floored at 55 Hz) and an Asteroids-style thump an octave above each beat (`thump`). Charlie found the thump "too crunchy" on the cabinet, so it was reverted the same day. Measurements and the original thump's pitches are in `docs/decisions.md`. Published as dgrlabs_co 5e801a3; not yet heard on a cabinet.
 - Shelved an Apple TV version (see `docs/decisions.md`).

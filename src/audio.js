@@ -316,32 +316,6 @@ export class Sound {
     const f = [41.2, 41.2, 49, 46.25][step % 4];
     this.tone('sine', f * 1.6, f, 0.32, 0.95, 0, this.bus, 0.004);
     this.tone('sine', f * 1.2, f * 0.9, 0.18, 0.35, 0, this.drive); // overtone so small speakers hear it
-    this.thump(f * 2, 0.3);
-  }
-
-  // A short filtered square an octave up, after the original Asteroids thump
-  // (a 66 ms burst at about 81 and 87 Hz through an RC low-pass near 480 Hz).
-  // It sits where a small desktop subwoofer plays, and its overtones carry on
-  // the satellites.
-  thump(freq, level) {
-    const ctx = this.ctx;
-    if (!ctx) return;
-    const t = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    osc.type = 'square';
-    osc.frequency.value = freq;
-    const f = ctx.createBiquadFilter();
-    f.type = 'lowpass';
-    f.frequency.value = 480;
-    f.Q.value = 0.5;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(level, t + 0.003);
-    g.gain.setValueAtTime(level, t + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
-    osc.connect(f).connect(g).connect(this.bus);
-    osc.start(t);
-    osc.stop(t + 0.08);
   }
 
   waveStart() {

@@ -166,3 +166,9 @@
 > **Status:** decided-by-user
 
 - Charlie chose (b) for the beat: an Asteroids-style thump on each hit. I made it a 70 ms square wave an octave above the beat note (82, 98, and 92.5 Hz) through a 480 Hz low-pass, at level 0.3. Through the models it adds 5.4 dB on the satellites and 0.4 dB on the sub, since the compressor still caps the beat. He asked to publish right away.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-20
+> **Status:** decided-by-user
+
+- Charlie heard the beat thump on the cabinet: "beat is too crunchy. revert it." I removed `thump`, so the beat is back to its 2026-11-19 sound. The death sub layer stays.
