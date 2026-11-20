@@ -280,6 +280,35 @@ export class Sound {
     this.tone('sawtooth', 420, 30, 1.8, 0.16, 0.05, this.drive);
     this.burst('lowpass', 300, 30, 2.6, 0.7, 0.1); // long rumble
     this.tone('sine', 55, 22, 2.2, 0.8, 0.08); // sub tail
+    this.deathSub(0.05);
+  }
+
+  // Shadows the falling sawtooth two octaves down, then levels off at 55 Hz
+  // instead of following it below what a small desktop subwoofer can play
+  // (a 4-inch driver like the CA-3090's fades out under about 60 Hz).
+  deathSub(delay) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime + delay;
+    const dur = 1.8;
+    const floor = 55;
+    const n = 64;
+    const curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const saw = 420 * (30 / 420) ** (i / (n - 1)); // the sawtooth's own sweep
+      const f = saw / 4;
+      curve[i] = (f ** 4 + floor ** 4) ** 0.25; // smooth max with the floor
+    }
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueCurveAtTime(curve, t, dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.6, t + 0.02);
+    g.gain.setTargetAtTime(0.0001, t + dur * 0.55, 0.35);
+    osc.connect(g).connect(this.bus);
+    osc.start(t);
+    osc.stop(t + dur + 0.6);
   }
 
   // The pulse walks a creeping four-note figure: E, E, G, F#.

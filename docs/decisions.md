@@ -151,3 +151,12 @@
 > **Status:** decided-by-user
 
 - Charlie floated an Apple TV version and then shelved it ("let's shelve the apple tv idea"). What we found: tvOS has no `WKWebView`, so a port means rewriting the game natively in Swift and Metal or RealityKit. I found no indie game that made real money on Apple TV alone; reported launch-era sales were under $100 a day even for top-charting apps. If it comes back, the version that made sense was a native universal app (iPhone, iPad, and Apple TV under one purchase), with the second-gen Siri Remote's clickpad as a d-pad and support for Bluetooth controllers.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-20
+> **Status:** proposed-by-agent
+
+- Charlie asked for more subwoofer use on the cabinets: a lower layer under the death tone and a low layer on the beat. The iMac cabinet's speakers are a Cyber Acoustics CA-3090 (decided-by-user: Charlie named them): a 4-inch ported sub on about 5 W, rated to 40 Hz by retailers. I assumed it plays little below about 60 Hz, so the game's 22 to 41 Hz sub layers mostly don't reach it.
+- I added `deathSub`: a sine two octaves under the falling death sawtooth that levels off at 55 Hz. Rendered offline through a rough model of that sub (4th-order high-pass at 60 Hz, low-pass at 160 Hz), the death sound comes out 8 dB louder.
+- A sine an octave above the beat added nothing through the same model: the beat already drives the compressor, which turns everything down to make room. I left the beat as it was pending Charlie's choice.
+- Reference, measured from MAME's `asteroid` (wavwrite on the iMac): the original thump is a 66 ms filtered square wave alternating 81.2 and 87.1 Hz, about E2 and F2, with gaps shrinking from 0.84 s to about 0.33 s. Our beat walks E1, G1, and F#1 from 41 Hz, an octave lower.
