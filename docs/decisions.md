@@ -160,3 +160,9 @@
 - I added `deathSub`: a sine two octaves under the falling death sawtooth that levels off at 55 Hz. Rendered offline through a rough model of that sub (4th-order high-pass at 60 Hz, low-pass at 160 Hz), the death sound comes out 8 dB louder.
 - A sine an octave above the beat added nothing through the same model: the beat already drives the compressor, which turns everything down to make room. I left the beat as it was pending Charlie's choice.
 - Reference, measured from MAME's `asteroid` (wavwrite on the iMac): the original thump is a 66 ms filtered square wave alternating 81.2 and 87.1 Hz, about E2 and F2, with gaps shrinking from 0.84 s to about 0.33 s. Our beat walks E1, G1, and F#1 from 41 Hz, an octave lower.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-20
+> **Status:** decided-by-user
+
+- Charlie chose (b) for the beat: an Asteroids-style thump on each hit. I made it a 70 ms square wave an octave above the beat note (82, 98, and 92.5 Hz) through a 480 Hz low-pass, at level 0.3. Through the models it adds 5.4 dB on the satellites and 0.4 dB on the sub, since the compressor still caps the beat. He asked to publish right away.
