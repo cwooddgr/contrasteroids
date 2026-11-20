@@ -145,3 +145,9 @@
 > **Status:** proposed-by-agent
 
 - `docs/marquee.mjs` now draws the marquee in 2D canvas, replacing the game-render capture. It shows a deep-space background, black-outlined rocks with a hard terminator (orange where lit, violet in shadow, after the game's hard light), and our ship firing at a burst. The title is in Audiowide with a yellow-to-red fill, black extrusion, and pink outline, with a DGR LABS maker's badge and a cyan and magenta trim frame.
+
+> **Author:** Claude Code (coder)
+> **Date:** 2026-11-20
+> **Status:** decided-by-user
+
+- Charlie floated an Apple TV version and then shelved it ("let's shelve the apple tv idea"). What we found: tvOS has no `WKWebView`, so a port means rewriting the game natively in Swift and Metal or RealityKit. I found no indie game that made real money on Apple TV alone; reported launch-era sales were under $100 a day even for top-charting apps. If it comes back, the version that made sense was a native universal app (iPhone, iPad, and Apple TV under one purchase), with the second-gen Siri Remote's clickpad as a d-pad and support for Bluetooth controllers.
