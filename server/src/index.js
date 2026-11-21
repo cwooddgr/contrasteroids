@@ -1,4 +1,6 @@
 // Contrasteroids score server: daily and all-time top tens for Easy and Hard.
+// It also serves Dungeon (~/projects/dungeon) as mode "dungeon", with its own
+// rules in games/dungeon.js.
 //
 // The game is open source, so nothing the browser sends can be trusted. The
 // defenses are what the server controls: it times each game itself (a session
@@ -12,7 +14,12 @@
 // POST   /submit {session, initials, score, wave, kills} -> { id, today, allTime }  (ranks)
 // DELETE /scores/:id         (Authorization: Bearer ADMIN_TOKEN)
 
-import { MODES, MAX_GAME_MS, checkRun, dayKey, initialsOk } from '../../src/scoring.js';
+import { MODES as GAME_MODES, MAX_GAME_MS, checkRun, dayKey, initialsOk } from '../../src/scoring.js';
+import { MODE as DUNGEON, checkDungeonRun } from './games/dungeon.js';
+
+// Every board this Worker keeps; each mode's run check comes from its game.
+const MODES = [...GAME_MODES, DUNGEON];
+const CHECKS = { [DUNGEON]: checkDungeonRun };
 
 const TOP = 10;
 const STARTS_PER_HOUR = 120; // per IP; a game can't be much shorter than 30 s
@@ -89,7 +96,7 @@ async function submit(request, env, now) {
 
   const elapsed = now - s.created;
   const run = { score: body.score, wave: body.wave, kills: body.kills };
-  const why = checkRun(run, elapsed);
+  const why = elapsed > MAX_GAME_MS ? 'session expired' : (CHECKS[s.mode] || checkRun)(run, elapsed);
   if (why) {
     console.log(JSON.stringify({ rejected: why, mode: s.mode, elapsed, run }));
     return fail(request, 422, 'rejected');
